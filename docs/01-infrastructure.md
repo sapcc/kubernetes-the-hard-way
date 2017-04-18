@@ -50,14 +50,14 @@ docker run -ti --env-file lab_rc --volume (pwd):/config hub.global.cloud.sap/mon
 Create a custom network:
 
 ```
-neutron network-create ... [TODO]
+neutron network-create kthw-net
 export NETWORK=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
 Create a subnet for the Kubernetes cluster:
 
 ```
-neutron subnet-create --range 10.180.0.0/16 ... [TODO]
+neutron subnet-create --name khw-subnet $NETWORK 10.180.0.0/16
 export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
