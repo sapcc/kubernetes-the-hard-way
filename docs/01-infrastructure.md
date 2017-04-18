@@ -64,7 +64,7 @@ export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ### Create Firewall Rules
 
 ```
-neutron secgroup-create --name kubernetes-the-hard-way ...
+neutron security-group-create kubernetes-the-hard-way
 ```
 
 ```
