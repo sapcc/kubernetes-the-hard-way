@@ -91,18 +91,42 @@ neutron secgroup-add-rule allow-healthz \
 
 
 ```
-nova secgroup-list-rules 5258bad2-3704-4a33-92c8-57766d5c6ce5
+neutron security-group-show f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
 ```
 
 ```
-+-------------+-----------+---------+-----------+-------------------------+
-| IP Protocol | From Port | To Port | IP Range  | Source Group            |
-+-------------+-----------+---------+-----------+-------------------------+
-| tcp         | 22        | 22      | 0.0.0.0/0 | kubernetes-the-hard-way |
-| tcp         | 3389      | 3389    | 0.0.0.0/0 | kubernetes-the-hard-way |
-| tcp         | 6443      | 6443    | 0.0.0.0/0 | kubernetes-the-hard-way |
-| ICMP        |           |         | 0.0.0.0/0 | kubernetes-the-hard-way |
-+-------------+-----------+---------+-----------+-------------------------+
++----------------------+--------------------------------------------------------------------+
+| Field                | Value                                                              |
++----------------------+--------------------------------------------------------------------+
+| description          |                                                                    |
+| id                   | f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f                               |
+| name                 | kubernetes-the-hard-way                                            |
+| security_group_rules | {                                                                  |
+|                      |      "remote_group_id": null,                                      |
+|                      |      "direction": "ingress",                                       |
+|                      |      "protocol": "icmp",                                           |
+|                      |      "description": "allow-external",                              |
+|                      |      "ethertype": "IPv4",                                          |
+|                      |      "remote_ip_prefix": "0.0.0.0/0",                              |
+|                      |      "port_range_max": null,                                       |
+|                      |      "security_group_id": "f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f",  |
+|                      |      "port_range_min": null,                                       |
+|                      |      "tenant_id": "51e81a318003442a8c232592166f0e8b",              |
+|                      |      "id": "1e8a081d-cd54-44c9-b559-9554a400eb3a"                  |
+|                      | }                                                                  |
+|                      | {                                                                  |
+|                      |      "remote_group_id": null,                                      |
+|                      |      "direction": "ingress",                                       |
+|                      |      "protocol": "tcp",                                            |
+|                      |      "description": "allow-external",                              |
+|                      |      "ethertype": "IPv4",                                          |
+|                      |      "remote_ip_prefix": "0.0.0.0/0",                              |
+|                      |      "port_range_max": 6443,                                       |
+|                      |      "security_group_id": "f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f",  |
+|                      |      "port_range_min": 6443,                                       |
+|                      |      "tenant_id": "51e81a318003442a8c232592166f0e8b",              |
+|                      |      "id": "b4ce59c6-dce9-4748-8daa-d63e2d3672b8"                  |
+|                      | }                                                                  |
 ```
 
 ### Create the Kubernetes Public Address
