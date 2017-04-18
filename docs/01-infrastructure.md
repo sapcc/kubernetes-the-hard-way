@@ -88,7 +88,7 @@ neutron secgroup-add-rule allow-healthz \
   --network kubernetes-the-hard-way \
   --source-ranges 130.211.0.0/22
 ```
-
+### Validate rules
 
 ```
 neutron security-group-show f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
