@@ -1,37 +1,47 @@
-# Cloud Infrastructure Provisioning - Google Cloud Platform
+# Cloud Infrastructure Provisioning - Openstack 
 
 This lab will walk you through provisioning the compute instances required for running a H/A Kubernetes cluster. A total of 6 virtual machines will be created.
 
 After completing this guide you should have the following compute instances:
 
 ```
-gcloud compute instances list
+nova list
 ```
 
 ````
-NAME         ZONE           MACHINE_TYPE   PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP      STATUS
-controller0  us-central1-f  n1-standard-1               10.240.0.10  XXX.XXX.XXX.XXX  RUNNING
-controller1  us-central1-f  n1-standard-1               10.240.0.11  XXX.XXX.XXX.XXX  RUNNING
-controller2  us-central1-f  n1-standard-1               10.240.0.12  XXX.XXX.XXX.XXX  RUNNING
-worker0      us-central1-f  n1-standard-1               10.240.0.20  XXX.XXX.XXX.XXX  RUNNING
-worker1      us-central1-f  n1-standard-1               10.240.0.21  XXX.XXX.XXX.XXX  RUNNING
-worker2      us-central1-f  n1-standard-1               10.240.0.22  XXX.XXX.XXX.XXX  RUNNING
++--------------------------------------+---------+--------+------------+-------------+-------------------------+
+| ID                                   | Name    | Status | Task State | Power State | Networks                |
++--------------------------------------+---------+--------+------------+-------------+-------------------------+
+| 9e957363-98cf-45bd-9170-11865c7a2c20 | master0 | ACTIVE | -          | Running     | lab_private=10.180.0.10 |
+| 9e957363-98cf-45bd-9170-11865c7a2c20 | master1 | ACTIVE | -          | Running     | lab_private=10.180.0.11 |
+| 9e957363-98cf-45bd-9170-11865c7a2c20 | master2 | ACTIVE | -          | Running     | lab_private=10.180.0.12 |
+| 9e957363-98cf-45bd-9170-11865c7a2c20 | minion0 | ACTIVE | -          | Running     | lab_private=10.180.0.20 |
+| 9e957363-98cf-45bd-9170-11865c7a2c20 | minion1 | ACTIVE | -          | Running     | lab_private=10.180.0.21 |
+| 9e957363-98cf-45bd-9170-11865c7a2c20 | minion2 | ACTIVE | -          | Running     | lab_private=10.180.0.22 |
++--------------------------------------+---------+--------+------------+-------------+-------------------------+
 ````
 
 > All machines will be provisioned with fixed private IP addresses to simplify the bootstrap process.
 
-To make our Kubernetes control plane remotely accessible, a public IP address will be provisioned and assigned to a Load Balancer that will sit in front of the 3 Kubernetes controllers.
+To make our Kubernetes control plane remotely accessible, a public IP address will be provisioned and assigned to a Load Balancer that will sit in front of the 3 Kubernetes masters.
 
 ## Prerequisites
 
-Set the compute region and zone to us-central1:
+Create a project in Openstack and configure your CLI tools:
 
 ```
-gcloud config set compute/region us-central1
+OS_AUTH_URL=https://identity.cloud.sap:443/v3
+OS_IDENTITY_API_VERSION=3
+OS_PROJECT_NAME=lab
+OS_PROJECT_DOMAIN_NAME=lab
+OS_USERNAME=D038720
+OS_USER_DOMAIN_NAME=lab
+OS_PASSWORD=abc123
+OS_REGION_NAME=eu-de-1
 ```
 
 ```
-gcloud config set compute/zone us-central1-f
+docker run -ti --env-file lab_rc --volume (pwd):/config hub.global.cloud.sap/monsoon/cc-openstack-cli:latest -- bash
 ```
 
 ## Setup Networking
@@ -40,35 +50,39 @@ gcloud config set compute/zone us-central1-f
 Create a custom network:
 
 ```
-gcloud compute networks create kubernetes-the-hard-way --mode custom
+neutron network-create ... [TODO]
+export NETWORK=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
 Create a subnet for the Kubernetes cluster:
 
 ```
-gcloud compute networks subnets create kubernetes \
-  --network kubernetes-the-hard-way \
-  --range 10.240.0.0/24
+neutron subnet-create --range 10.180.0.0/16 ... [TODO]
+export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
 ### Create Firewall Rules
 
 ```
-gcloud compute firewall-rules create allow-internal \
+neutron secgroup-create --name kubernetes-the-hard-way ...
+```
+
+```
+neutron secgroup-add-rule allow-internal \
   --allow tcp,udp,icmp \
   --network kubernetes-the-hard-way \
   --source-ranges 10.240.0.0/24,10.200.0.0/16
 ```
 
 ```
-gcloud compute firewall-rules create allow-external \
+neutron secgroup-add-rule allow-external \
   --allow tcp:22,tcp:3389,tcp:6443,icmp \
   --network kubernetes-the-hard-way \
   --source-ranges 0.0.0.0/0
 ```
 
 ```
-gcloud compute firewall-rules create allow-healthz \
+neutron secgroup-add-rule allow-healthz \
   --allow tcp:8080 \
   --network kubernetes-the-hard-way \
   --source-ranges 130.211.0.0/22
@@ -76,14 +90,18 @@ gcloud compute firewall-rules create allow-healthz \
 
 
 ```
-gcloud compute firewall-rules list --filter "network=kubernetes-the-hard-way"
+nova secgroup-list-rules 5258bad2-3704-4a33-92c8-57766d5c6ce5
 ```
 
 ```
-NAME            NETWORK                  SRC_RANGES                   RULES                          SRC_TAGS  TARGET_TAGS
-allow-external  kubernetes-the-hard-way  0.0.0.0/0                    tcp:22,tcp:3389,tcp:6443,icmp
-allow-healthz   kubernetes-the-hard-way  130.211.0.0/22               tcp:8080
-allow-internal  kubernetes-the-hard-way  10.240.0.0/24,10.200.0.0/16  tcp,udp,icmp
++-------------+-----------+---------+-----------+-------------------------+
+| IP Protocol | From Port | To Port | IP Range  | Source Group            |
++-------------+-----------+---------+-----------+-------------------------+
+| tcp         | 22        | 22      | 0.0.0.0/0 | kubernetes-the-hard-way |
+| tcp         | 3389      | 3389    | 0.0.0.0/0 | kubernetes-the-hard-way |
+| tcp         | 6443      | 6443    | 0.0.0.0/0 | kubernetes-the-hard-way |
+| ICMP        |           |         | 0.0.0.0/0 | kubernetes-the-hard-way |
++-------------+-----------+---------+-----------+-------------------------+
 ```
 
 ### Create the Kubernetes Public Address
@@ -91,90 +109,67 @@ allow-internal  kubernetes-the-hard-way  10.240.0.0/24,10.200.0.0/16  tcp,udp,ic
 Create a public IP address that will be used by remote clients to connect to the Kubernetes control plane:
 
 ```
-gcloud compute addresses create kubernetes-the-hard-way --region=us-central1
+nova floating-ip-create ...
 ```
 
 ```
-gcloud compute addresses list kubernetes-the-hard-way
+nova floating-ip-list
 ```
 
 ```
-NAME                     REGION       ADDRESS          STATUS
-kubernetes-the-hard-way  us-central1  XXX.XXX.XXX.XXX  RESERVED
++--------------------------------------+-------------+--------------------------------------+-------------+------------------------------+
+| Id                                   | IP          | Server Id                            | Fixed IP    | Pool                         |
++--------------------------------------+-------------+--------------------------------------+-------------+------------------------------+
+| c3e383e7-4678-45a7-aa5a-ad594c9f92d9 | 10.47.40.90 | -                                    | -           | FloatingIP-external-monsoon3 |
++--------------------------------------+-------------+--------------------------------------+-------------+------------------------------+
 ```
 
 ## Provision Virtual Machines
 
-All the VMs in this lab will be provisioned using Ubuntu 16.04 mainly because it runs a newish Linux kernel with good support for Docker.
+All the VMs in this lab will be provisioned using Container Linux. 
+
+### Fixed IPs
+
+```
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.10 --name master0 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.11 --name master1 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.12 --name master2 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.20 --name minion0 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.21 --name minion1 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.22 --name minion2 $NETWORK
+```
+
+```
+neutron port-list
+```
+
+```
++--------------------------------------+----------+-------------------+------------------------------------------------------------------------------------+
+| id                                   | name     | mac_address       | fixed_ips                                                                          |
++--------------------------------------+----------+-------------------+------------------------------------------------------------------------------------+
+| 67dc2530-841b-483c-9852-8311341f018c | master0  | fa:16:3e:9e:62:cf | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.10"} |
+| 99bdf85e-d8d1-4eb5-b543-eb7f7b15299b | master1  | fa:16:3e:7b:01:34 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.11"} |
+| 83206176-8509-4d0d-8151-77b89b5135b7 | master2  | fa:16:3e:5c:05:19 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.12"} |
+| 3235e943-8e40-4b31-bbc3-ea11124a6cd1 | minion0  | fa:16:3e:ff:1b:f4 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.20"} |
+| e4d21b0a-2e5e-4f0a-a3ee-5bc3243348ae | minion1  | fa:16:3e:a1:22:27 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.21"} |
+| 9808735a-f0d2-4d05-9414-d541684e12a7 | minion2  | fa:16:3e:7a:c0:3f | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.22"} |
++--------------------------------------+----------+-------------------+------------------------------------------------------------------------------------+
+```
 
 ### Virtual Machines
 
-#### Kubernetes Controllers
+#### Kubernetes Masters 
 
 ```
-gcloud compute instances create controller0 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.10 \
- --subnet kubernetes
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=67dc2530-841b-483c-9852-8311341f018c master0
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=99bdf85e-d8d1-4eb5-b543-eb7f7b15299b master1
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=83206176-8509-4d0d-8151-77b89b5135b7 master2
 ```
 
-```
-gcloud compute instances create controller1 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.11 \
- --subnet kubernetes
-```
+#### Kubernetes Minions 
 
 ```
-gcloud compute instances create controller2 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.12 \
- --subnet kubernetes
-```
-
-#### Kubernetes Workers
-
-```
-gcloud compute instances create worker0 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.20 \
- --subnet kubernetes
-```
-
-```
-gcloud compute instances create worker1 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.21 \
- --subnet kubernetes
-```
-
-```
-gcloud compute instances create worker2 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.22 \
- --subnet kubernetes
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=3235e943-8e40-4b31-bbc3-ea11124a6cd1 minion0 
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=e4d21b0a-2e5e-4f0a-a3ee-5bc3243348ae minion1
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=9808735a-f0d2-4d05-9414-d541684e12a7 minion2
 ```
