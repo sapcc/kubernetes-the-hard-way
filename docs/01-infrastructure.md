@@ -183,6 +183,10 @@ neutron port-list
 
 ### Virtual Machines
 
+#### Add ssh keypair
+```
+nova keypair-add --pub-key id_rsa.pub id_rsa
+```
 #### Kubernetes Masters 
 
 ```
