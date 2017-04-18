@@ -76,10 +76,10 @@ Repeat this for udp and icmp.
 
 
 ```
-neutron secgroup-add-rule allow-external \
-  --allow tcp:22,tcp:3389,tcp:6443,icmp \
-  --network kubernetes-the-hard-way \
-  --source-ranges 0.0.0.0/0
+neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 22 --port-range-max 22 --remote-ip-prefix 0.0.0.0/0 $SECGROUP
+neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 3389 --port-range-max 3389 --remote-ip-prefix 0.0.0.0/0 f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
+neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 6443 --port-range-max 6443 --remote-ip-prefix 0.0.0.0/0 f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
+neutron security-group-rule-create --description allow-external --direction ingress --protocol icmp --remote-ip-prefix 0.0.0.0/0 f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
 ```
 
 ```
