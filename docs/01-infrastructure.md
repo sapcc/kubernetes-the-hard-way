@@ -65,14 +65,15 @@ export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 
 ```
 neutron security-group-create kubernetes-the-hard-way
+export SECGROUP=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
 ```
-neutron secgroup-add-rule allow-internal \
-  --allow tcp,udp,icmp \
-  --network kubernetes-the-hard-way \
-  --source-ranges 10.240.0.0/24,10.200.0.0/16
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol tcp --remote-ip-prefix 10.200.0.0/16 $SECGROUP
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol tcp --remote-ip-prefix 10.180.0.0/16 $SECGROUP
 ```
+Repeat this for udp and icmp.
+
 
 ```
 neutron secgroup-add-rule allow-external \
