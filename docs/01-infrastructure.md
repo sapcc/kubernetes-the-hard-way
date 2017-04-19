@@ -61,6 +61,14 @@ neutron subnet-create --name khw-subnet $NETWORK 10.180.0.0/16
 export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
+Create a router for the kubernetes network:
+```
+neutron router-create khw-router
+export ROUTER_ID=33c35501-1b53-4e3f-8ee1-0726f9913ec0
+neutron router-interface-add $ROUTER_ID subnet=$SUBNET
+neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK
+```
+
 ### Create Firewall Rules
 
 ```
