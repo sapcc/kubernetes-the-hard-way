@@ -14,6 +14,11 @@ sudo mv bootstrap.kubeconfig /var/lib/kubelet
 sudo mv kube-proxy.kubeconfig /var/lib/kube-proxy
 ```
 
+```
+export API_SERVERS=$(sudo cat /var/lib/kubelet/bootstrap.kubeconfig | \
+  grep server | cut -d ':' -f2,3,4 | tr -d '[:space:]')
+```
+
 ### Create a service to start our kubelet
 
 ```
@@ -30,7 +35,7 @@ Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/o
 ExecStart=/opt/bin/kubelet-wrapper \
   --tls-private-key-file=/var/lib/kubelet/kubelet-key.pem \
   --tls-cert-file=/var/lib/kubelet/kubelet.pem \
-  --api-servers=https://$KUBERNETES_PUBLIC_ADDRESS \
+  --api-servers=$APISERVERS \
   --kubeconfig=/var/lib/kubelet/bootstrap.kubeconfig \
   --allow-privileged=true \
   --host-network-sources="*" \
