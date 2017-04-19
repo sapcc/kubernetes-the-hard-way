@@ -28,7 +28,7 @@ Description=Start RKT kubelet
 After=rpc-statd.service
 Requires=rpc-statd.service
 [Service]
-Environment="KUBELET_VERSION={{.kubernetes.version}}_coreos.0"
+Environment="KUBELET_VERSION=1.6.1_coreos.0"
 Environment="RKT_OPTS=--volume=resolv,kind=host,source=/etc/resolv.conf --mount volume=resolv,target=/etc/resolv.conf"
 EnvironmentFile=/etc/metadata
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin:/usr/share/oem/bin
