@@ -64,10 +64,10 @@ EOF
 Distribute the bootstrap token file to each controller node:
 
 ```
-for host in controller0 controller1 controller2; do
-  gcloud compute copy-files token.csv ${host}:~/
-done
+scp token.csv 10.180.0.11:~/
 ```
+Repeat for every master.
+
 
 ## Client Authentication Configs
 
