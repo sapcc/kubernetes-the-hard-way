@@ -261,18 +261,24 @@ kubernetes.pem
 
 Set the list of Kubernetes hosts where the certs should be copied to:
 
-The following commands will copy the TLS certificates and keys to each Kubernetes host using the `gcloud compute copy-files` command.
+The following commands will copy the TLS certificates and keys to each Kubernetes host using the gateway we created.
+
+First everything on the gateway:
+```
+scp ca-key.pem ca.pem kube-proxy-key.pem kube-proxy.pem kubernetes-key.pem kubernetes.pem core@$GATEWAY:~/
+ssh -A core@$GATEWAY
+```
+We are now on the gateway and have agent forwarding on.
+
+Now we can distribute the keys:
 
 ```
-neutron floatingip-create $EXTERNAL_NETWORK
-export GATEWAY=10.47.40.103
-export GATEWAY_ID=4f69220e-4504-45d1-a250-d478e6cb0de5
-nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups kubernetes-the-hard-way --nic net-id=$NETWORK gateway
+scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.11:~/
+```
+Repeat for every master.
+
 
 ```
-
+scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.20:~/
 ```
-for host in controller0 controller1 controller2; do
-  gcloud compute copy-files ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem ${host}:~/
-done
-```
+Repeat for every minion.
