@@ -207,12 +207,6 @@ kube-proxy.pem
 
 The Kubernetes public IP address will be included in the list of subject alternative names for the Kubernetes server certificate. This will ensure the TLS certificate is valid for remote client access.
 
-```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
-```
-
 Create the Kubernetes server certificate signing request:
 
 ```
