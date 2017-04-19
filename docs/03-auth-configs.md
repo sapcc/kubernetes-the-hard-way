@@ -2,6 +2,8 @@
 
 In this lab you will setup the necessary authentication configs to enable Kubernetes clients to bootstrap and authenticate using RBAC (Role-Based Access Control).
 
+The following should be done on the gateway else the file has to be transported first.
+
 ## Download and Install kubectl
 
 The kubectl client will be used to generate kubeconfig files which will be consumed by the kubelet and kube-proxy services.
