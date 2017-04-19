@@ -9,6 +9,7 @@ doing things.
 ```
 sudo mkdir -p /var/lib/{kubelet,kube-proxy,kubernetes}
 sudo mkdir -p /var/run/kubernetes
+sudo mkdir -p /var/lib/kubelet/manifests
 sudo mv bootstrap.kubeconfig /var/lib/kubelet
 sudo mv kube-proxy.kubeconfig /var/lib/kube-proxy
 ```
