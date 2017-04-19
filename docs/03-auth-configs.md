@@ -75,14 +75,6 @@ This section will walk you through creating kubeconfig files that will be used t
 
 Each kubeconfig requires a Kubernetes master to connect to. To support H/A the IP address assigned to the load balancer sitting in front of the Kubernetes API servers will be used.
 
-### Set the Kubernetes Public Address
-
-```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
-```
-
 ## Create client kubeconfig files
 
 ### Create the bootstrap kubeconfig file
