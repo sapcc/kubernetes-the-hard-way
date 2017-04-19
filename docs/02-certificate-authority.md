@@ -264,9 +264,11 @@ Set the list of Kubernetes hosts where the certs should be copied to:
 The following commands will copy the TLS certificates and keys to each Kubernetes host using the `gcloud compute copy-files` command.
 
 ```
-for host in worker0 worker1 worker2; do
-  gcloud compute copy-files ca.pem kube-proxy.pem kube-proxy-key.pem ${host}:~/
-done
+neutron floatingip-create $EXTERNAL_NETWORK
+export GATEWAY=10.47.40.103
+export GATEWAY_ID=4f69220e-4504-45d1-a250-d478e6cb0de5
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups kubernetes-the-hard-way --nic net-id=$NETWORK gateway
+
 ```
 
 ```
