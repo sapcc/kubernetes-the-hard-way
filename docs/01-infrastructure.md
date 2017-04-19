@@ -139,6 +139,7 @@ neutron floatingip-create $EXTERNAL_NETWORK
 ### Validate
 ```
 neutron floatingip-list
+export KUBERNETES_PUBLIC_ADDRESS=10.47.40.96
 ```
 
 ```
