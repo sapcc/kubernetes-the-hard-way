@@ -211,3 +211,25 @@ nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --secur
 nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=e4d21b0a-2e5e-4f0a-a3ee-5bc3243348ae minion1
 nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic port-id=9808735a-f0d2-4d05-9414-d541684e12a7 minion2
 ```
+
+#### Gateway
+
+```
+nova boot --flavor m1.small --key-name id_rsa --image coreos-amd64-alpha --security-groups default --nic net-id=$NETWORK gateway
+```
+
+Now lookup which ip that machine got and the corresponding port-id
+
+```
+nova list
+neutron port-list
+export PORT_ID=d89378ff-4681-4b4c-93be-12f62e2c49fd
+```
+We can now associate a floatingip with the gateway to access the kubenet
+
+```
+neutron floatingip-create $EXTERNAL_NETWORK
+export GATEWAY_ID=4f69220e-4504-45d1-a250-d478e6cb0de5
+export GATEWAY=10.47.40.103
+neutron floatingip-associate $GATEWAY_ID $PORT_ID
+```
