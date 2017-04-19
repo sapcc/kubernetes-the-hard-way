@@ -137,7 +137,7 @@ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 ## Distribute the client kubeconfig files
 
 ```
-for host in worker0 worker1 worker2; do
-  gcloud compute copy-files bootstrap.kubeconfig kube-proxy.kubeconfig ${host}:~/
-done
+scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.20:~/
 ```
+Repeat for every minion.
+
