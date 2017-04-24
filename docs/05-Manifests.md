@@ -79,3 +79,92 @@ spec:
           mountPath: /var/lib/etcd2
 EOF
 ```
+```
+cat > kubernetes.yaml << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  volumes:
+    - name: var-lib-kubernetes
+      hostPath:
+        path: /var/lib/kubernetes
+  containers:
+    - name: apiserver
+      securityContext:
+      capabilities:
+        add:
+          - NET_ADMIN
+      image: sapcc/hyperkube-amd64:{{.kubernetes.version}}
+      args:
+        - /hyperkube
+        - apiserver
+        - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
+        - --allow-privileged=true
+        - --advertise-address=$KUBERNETES_PUBLIC_ADDRESS
+        - --client-ca-file=/var/lib/kubernetes/ca.pem
+        - --etcd-servers=http://127.0.0.1:2379
+        - --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem
+        - --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem
+        - --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem
+        - --kubelet-https=true
+        - --runtime-config=extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true
+        - --secure_port=443
+        - --service-account-key-file=/var/lib/kubernetes/ca-key.pem
+        - --service-cluster-ip-range=10.32.0.0/24
+        - --tls-cert-file=/var/lib/kubernetes/kubernetes.pem
+        - --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem
+      livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 8080
+        initialDelaySeconds: 15
+        timeoutSeconds: 1
+      volumeMounts:
+        - mountPath: /var/lib/kubernetes
+          name: var-lib-kubernetes
+          readOnly: true
+    - name: controller-manager
+      image: sapcc/hyperkube-amd64:{{.kubernetes.version}}
+      args:
+        - /hyperkube
+        - controller-manager
+        - --kubeconfig=/etc/kubernetes/config/controller-manager
+        - --leader-elect=true
+        - --root-ca-file=/etc/kubernetes/ssl/ca.pem
+        - --service-account-private-key-file=/etc/kubernetes/ssl/ca-key.pem
+      livenessProbe:
+        httpGet:
+          host: 127.0.0.1
+          path: /healthz
+          port: 10252
+          initialDelaySeconds: 15
+          timeoutSeconds: 1
+      volumeMounts:
+        - mountPath: /var/lib/kubernetes
+          name: var-lib-kubernetes
+          readOnly: true
+    - name: scheduler
+      image: sapcc/hyperkube-amd64:{{.kubernetes.version}}
+      args:
+        - /hyperkube
+        - scheduler
+        - --kubeconfig=/etc/kubernetes/config/scheduler
+        - --leader-elect=true
+      livenessProbe:
+        httpGet:
+          host: 127.0.0.1
+          path: /healthz
+          port: 10251
+          initialDelaySeconds: 15
+          timeoutSeconds: 1
+      volumeMounts:
+        - mountPath: /var/lib/kubernetes
+          name: var-lib-kubernetes
+          readOnly: true
+EOF
+```
