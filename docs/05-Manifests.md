@@ -52,21 +52,21 @@ spec:
       image: quay.io/coreos/etcd:v2.2.5
       env:
         - name: ETCD_NAME
-          value: {{.hostname}}
+          value: $HOSTNAME
         - name: ETCD_DATA_DIR
-          value: /var/lib/etcd2/{{.hostname}}
+          value: /var/lib/etcd2/$HOSTNAME
         - name: ETCD_INITIAL_CLUSTER
-          value: {{.kubernetes.etcd_initial_cluster}}
+          value: true
         - name: ETCD_INITIAL_CLUSTER_TOKEN
-          value: kubernetes-{{.region}}
+          value: kubernetes-the-hard-way
         - name: ETCD_INITIAL_ADVERTISE_PEER_URLS
-          value: http://{{.internal_network.address}}:2380
+          value: http://10.180.0.10:2380
         - name: ETCD_ADVERTISE_CLIENT_URLS
           value: http://localhost:2379
         - name: ETCD_LISTEN_PEER_URLS
-          value: http://{{.internal_network.address}}:2380
+          value: http://10.180.0.10:2380
         - name: ETCD_LISTEN_CLIENT_URLS
-          value: http://127.0.0.1:2379,http://{{.internal_network.address}}:2379
+          value: http://127.0.0.1:2379,http://10.180.0.10:2379
       livenessProbe:
         httpGet:
           host: 127.0.0.1
