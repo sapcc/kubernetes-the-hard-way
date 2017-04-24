@@ -56,7 +56,7 @@ spec:
         - name: ETCD_DATA_DIR
           value: /var/lib/etcd2/$HOSTNAME
         - name: ETCD_INITIAL_CLUSTER
-          value: master0=http://10.180.0.10:2380,master1=http://10.180.0.11:2380,master2=http://10.180.0.12:2380
+          value: master0.novalocal=http://10.180.0.10:2380,master1.novalocal=http://10.180.0.11:2380,master2.novalocal=http://10.180.0.12:2380
         - name: ETCD_INITIAL_CLUSTER_TOKEN
           value: kubernetes-the-hard-way
         - name: ETCD_INITIAL_ADVERTISE_PEER_URLS
