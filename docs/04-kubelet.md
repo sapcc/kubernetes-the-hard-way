@@ -12,6 +12,8 @@ sudo mkdir -p /var/run/kubernetes
 sudo mkdir -p /var/lib/kubelet/manifests
 sudo mv bootstrap.kubeconfig /var/lib/kubelet
 sudo mv kube-proxy.kubeconfig /var/lib/kube-proxy
+sudo cp kubernetes.pem /var/lib/kubelet
+sudo cp kubernetes-key.pem /var/lib/kubelet
 ```
 
 ```
