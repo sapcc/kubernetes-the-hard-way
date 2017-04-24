@@ -61,7 +61,7 @@ ${BOOTSTRAP_TOKEN},kubelet-bootstrap,10001,"system:kubelet-bootstrap"
 EOF
 ```
 
-Distribute the bootstrap token file to each controller node:
+Distribute the bootstrap token file to each master node:
 
 ```
 scp token.csv 10.180.0.11:~/
