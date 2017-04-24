@@ -47,3 +47,8 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 ```
+
+Move the service file to the right location
+```
+sudo cp kubelet.service /etc/systemd/system/
+```
