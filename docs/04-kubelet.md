@@ -54,3 +54,9 @@ Move the service file to the right location
 ```
 sudo cp kubelet.service /etc/systemd/system/
 ```
+
+Start the kubelet
+```
+sudo systemctl enable kubelet
+sudo systemctl start kubelet
+```
