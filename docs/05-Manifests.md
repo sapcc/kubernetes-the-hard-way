@@ -1,4 +1,5 @@
 ```
+cat > kube-proxy.yaml << EOF
 apiVersion: v1
 kind: Pod
 metadata: 
@@ -12,7 +13,7 @@ spec:
       path: /etc/kubernetes
    containers: 
      - name: proxy 
-       image: sapcc/hyperkube-amd64:{{.kubernetes.version}}
+       image: quay.io/coreos/hyperkube-amd64:v1.6.1_coreos.0
        args: 
          - /hyperkube
          - proxy 
@@ -32,4 +33,5 @@ spec:
            readOnly: true
            securityContext:
            privileged: true
+EOF
 ```
