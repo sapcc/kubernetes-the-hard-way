@@ -61,17 +61,6 @@ ${BOOTSTRAP_TOKEN},kubelet-bootstrap,10001,"system:kubelet-bootstrap"
 EOF
 ```
 
-Distribute the bootstrap token file to each master node:
-
-```
-scp token.csv core@$GATEWAY:~/
-ssh -A core@$GATEWAY
-scp token.csv 10.180.0.10:~/
-scp token.csv 10.180.0.11:~/
-scp token.csv 10.180.0.12:~/
-```
-
-
 ## Client Authentication Configs
 
 This section will walk you through creating kubeconfig files that will be used to bootstrap kubelets, which will then generate their own kubeconfigs based on dynamically generated certificates, and a kubeconfig for authenticating kube-proxy clients.
@@ -79,6 +68,35 @@ This section will walk you through creating kubeconfig files that will be used t
 Each kubeconfig requires a Kubernetes master to connect to. To support H/A the IP address assigned to the load balancer sitting in front of the Kubernetes API servers will be used.
 
 ## Create client kubeconfig files
+
+### Create the master-kubelet kubeconfig file
+
+```
+kubectl config set-cluster kubernetes-the-hard-way \
+  --certificate-authority=ca.pem \
+  --embed-certs=true \
+  --server=https://localhost:6443
+  --kubeconfig=kubelet.kubeconfig
+```
+
+```
+kubectl config set-credentials kubelet \
+  --client-certificate=kubelet.pem \
+  --client-key=kubelet-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kubelet.kubeconfig
+```
+
+```
+kubectl config set-context default \
+  --cluster=kubernetes-the-hard-way \
+  --user=kubelet \
+  --kubeconfig=kubelet.kubeconfig
+```
+
+```
+kubectl config use-context default --kubeconfig=kubelet.kubeconfig
+```
 
 ### Create the bootstrap kubeconfig file
 
@@ -137,12 +155,40 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 ```
 
-## Distribute the client kubeconfig files
+## Cloud Provider Config
 
 ```
-scp bootstrap.kubeconfig kube-proxy.kubeconfig core@$GATEWAY:~/
+cat > openstack.config <<EOF
+[Global]
+auth-url = ${OS_AUTH_URL} 
+username = ${OS_USERNAME} 
+password = ${OS_PASSWORD} 
+domain-name = ${OS_PROJECT_DOMAIN_NAME}
+tenant-name = ${OS_PROJECT_NAME} 
+region = ${OS_REGION_NAME} 
+[LoadBalancer]
+lb-version=v2
+subnet-id= ${SUBNET}
+create-monitor = yes
+monitor-delay = 1m
+monitor-timeout = 30s
+monitor-max-retries = 3
+[BlockStorage]
+trust-device-path = no
+[Route]
+router-id = ${ROUTER_ID}
+EOF
+```
+
+## Distribute the client configuration 
+
+```
+scp *config token.csv core@$GATEWAY:~/
 ssh -A core@$GATEWAY
-scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.20:~/
-scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.21:~/
-scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.22:~/
+scp kubelet.kubeconfig openstack.config token.csv core@10.180.0.10:~/
+scp kubelet.kubeconfig openstack.config token.csv core@10.180.0.11:~/
+scp kubelet.kubeconfig openstack.config token.csv core@10.180.0.12:~/
+scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.20:~/
+scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.21:~/
+scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.22:~/
 ```
