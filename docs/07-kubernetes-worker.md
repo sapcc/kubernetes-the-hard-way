@@ -2,9 +2,9 @@
 
 In this lab you will bootstrap 3 Kubernetes worker nodes. The following virtual machines will be used:
 
-* minion0 
-* minion1
-* minion2
+* worker0
+* worker1
+* worker2
 
 ## Why
 
