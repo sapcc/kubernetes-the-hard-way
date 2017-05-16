@@ -64,9 +64,12 @@ EOF
 Distribute the bootstrap token file to each master node:
 
 ```
+scp token.csv core@$GATEWAY:~/
+ssh -A core@$GATEWAY
+scp token.csv 10.180.0.10:~/
 scp token.csv 10.180.0.11:~/
+scp token.csv 10.180.0.12:~/
 ```
-Repeat for every master.
 
 
 ## Client Authentication Configs
@@ -83,7 +86,7 @@ Each kubeconfig requires a Kubernetes master to connect to. To support H/A the I
 kubectl config set-cluster kubernetes-the-hard-way \
   --certificate-authority=ca.pem \
   --embed-certs=true \
-  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
+  --server=https://${KUBERNETES_PUBLIC_ADDRESS} \
   --kubeconfig=bootstrap.kubeconfig
 ```
 
@@ -111,7 +114,7 @@ kubectl config use-context default --kubeconfig=bootstrap.kubeconfig
 kubectl config set-cluster kubernetes-the-hard-way \
   --certificate-authority=ca.pem \
   --embed-certs=true \
-  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
+  --server=https://${KUBERNETES_PUBLIC_ADDRESS} \
   --kubeconfig=kube-proxy.kubeconfig
 ```
 
@@ -137,7 +140,9 @@ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 ## Distribute the client kubeconfig files
 
 ```
+scp bootstrap.kubeconfig kube-proxy.kubeconfig core@$GATEWAY:~/
+ssh -A core@$GATEWAY
 scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.20:~/
+scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.21:~/
+scp bootstrap.kubeconfig kube-proxy.kubeconfig core@10.180.0.22:~/
 ```
-Repeat for every minion.
-
