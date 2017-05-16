@@ -42,7 +42,6 @@ This tutorial assumes you have access to an Openstack and have setup the Opensta
 * [Bootstrapping a H/A Kubernetes Control Plane](docs/05-kubernetes-controller.md)
 * [Configuring the Kubernetes Client - Remote Access](docs/06-kubectl.md)
 * [Bootstrapping Kubernetes Workers](docs/07-kubernetes-worker.md)
-* [Managing the Container Network Routes](docs/08-network.md)
 * [Deploying the Cluster DNS Add-on](docs/09-dns-addon.md)
 * [Smoke Test](docs/10-smoke-test.md)
 * [Cleaning Up](docs/11-cleanup.md)

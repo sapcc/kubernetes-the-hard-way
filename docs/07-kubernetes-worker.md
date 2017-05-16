@@ -2,9 +2,9 @@
 
 In this lab you will bootstrap 3 Kubernetes worker nodes. The following virtual machines will be used:
 
-* worker0
-* worker1
-* worker2
+* minion0 
+* minion1 
+* minion2
 
 ## Why
 
@@ -19,10 +19,6 @@ Some people would like to run workers and cluster services anywhere in the clust
 
 Each worker node will provision a unique TLS client certificate as defined in the [kubelet TLS bootstrapping guide](https://kubernetes.io/docs/admin/kubelet-tls-bootstrapping/). The `kubelet-bootstrap` user must be granted permission to request a client TLS certificate. 
 
-```
-gcloud compute ssh controller0
-```
-
 Enable TLS bootstrapping by binding the `kubelet-bootstrap` user to the `system:node-bootstrapper` cluster role:
 
 ```
@@ -33,7 +29,7 @@ kubectl create clusterrolebinding kubelet-bootstrap \
 
 ## Provision the Kubernetes Worker Nodes
 
-Run the following commands on `worker0`, `worker1`, `worker2`:
+Run the following commands on `minin0`, `minion1`, `minion2`:
 
 ```
 sudo mkdir -p /var/lib/{kubelet,kube-proxy,kubernetes}
@@ -57,64 +53,6 @@ Move the TLS certificates in place
 sudo mv ca.pem /var/lib/kubernetes/
 ```
 
-### Install Docker
-
-```
-wget https://get.docker.com/builds/Linux/x86_64/docker-1.12.6.tgz
-```
-
-```
-tar -xvf docker-1.12.6.tgz
-```
-
-```
-sudo cp docker/docker* /usr/bin/
-```
-
-Create the Docker systemd unit file:
-
-```
-cat > docker.service <<EOF
-[Unit]
-Description=Docker Application Container Engine
-Documentation=http://docs.docker.io
-
-[Service]
-ExecStart=/usr/bin/docker daemon \\
-  --iptables=false \\
-  --ip-masq=false \\
-  --host=unix:///var/run/docker.sock \\
-  --log-level=error \\
-  --storage-driver=overlay
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-```
-
-Start the docker service:
-
-```
-sudo mv docker.service /etc/systemd/system/docker.service
-```
-
-```
-sudo systemctl daemon-reload
-```
-
-```
-sudo systemctl enable docker
-```
-
-```
-sudo systemctl start docker
-```
-
-```
-sudo docker version
-```
 
 ### Install the kubelet
 
