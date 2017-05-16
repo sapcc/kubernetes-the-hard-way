@@ -14,6 +14,8 @@ admin.pem
 admin-key.pem
 ca-key.pem
 ca.pem
+kubelet.pem
+kubelet-key.pem
 kubernetes-key.pem
 kubernetes.pem
 kube-proxy.pem
@@ -159,6 +161,51 @@ admin-key.pem
 admin.pem
 ```
 
+### Create the kubelet client certificate
+
+Create the kubelet client certificate signing request:
+
+```
+cat > kubelet-csr.json <<EOF
+{
+  "CN": "system:node:kubelet",
+  "hosts": [],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "DE",
+      "L": "Berlin",
+      "O": "system:nodes",
+      "OU": "Cluster",
+      "ST": "Berlin"
+    }
+  ]
+}
+EOF
+```
+
+Generate the kube-proxy client certificate and private key:
+
+```
+cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  kubelet-csr.json | cfssljson -bare kubelet
+```
+
+Results:
+
+```
+kubelet-key.pem
+kubelet.pem
+```
+
+
 ### Create the kube-proxy client certificate
 
 Create the kube-proxy client certificate signing request:
@@ -219,6 +266,7 @@ cat > kubernetes-csr.json <<EOF
     "10.180.0.12",
     "${KUBERNETES_PUBLIC_ADDRESS}",
     "127.0.0.1",
+    "localhost",
     "kubernetes.default"
   ],
   "key": {
@@ -264,7 +312,7 @@ The following commands will copy the TLS certificates and keys to each Kubernete
 
 First everything on the gateway:
 ```
-scp ca-key.pem ca.pem kube-proxy-key.pem kube-proxy.pem kubernetes-key.pem kubernetes.pem core@$GATEWAY:~/
+scp *.pem core@$GATEWAY:~/
 ssh -A core@$GATEWAY
 ```
 We are now on the gateway and have agent forwarding on.
@@ -272,9 +320,9 @@ We are now on the gateway and have agent forwarding on.
 Now we can distribute the keys:
 
 ```
-scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.10:~/
-scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.11:~/
-scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.12:~/
+scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem 10.180.0.10:~/
+scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem 10.180.0.11:~/
+scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem 10.180.0.12:~/
 scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.20:~/
 scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.21:~/
 scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.22:~/
