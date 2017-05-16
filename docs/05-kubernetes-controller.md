@@ -2,9 +2,9 @@
 
 In this lab you will bootstrap a 3 node Kubernetes controller cluster. The following virtual machines will be used:
 
-* controller0
-* controller1
-* controller2
+* master0 
+* master1
+* master2
 
 In this lab you will also create a frontend load balancer with a public IP address for remote access to the API servers and H/A.
 
@@ -25,7 +25,7 @@ Each component is being run on the same machine for the following reasons:
 
 ## Provision the Kubernetes Controller Cluster
 
-Run the following commands on `controller0`, `controller1`, `controller2`:
+Run the following commands on `master0`, `master1`, `master2`:
 
 > Login to each machine using the gcloud compute ssh command
 
@@ -48,37 +48,7 @@ The TLS certificates created in the [Setting up a CA and TLS Cert Generation](02
 Copy the TLS certificates to the Kubernetes configuration directory:
 
 ```
-sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem /var/lib/kubernetes/
-```
-
-### Download and install the Kubernetes controller binaries
-
-Download the official Kubernetes release binaries:
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0-rc.1/bin/linux/amd64/kube-apiserver
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0-rc.1/bin/linux/amd64/kube-controller-manager
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0-rc.1/bin/linux/amd64/kube-scheduler
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0-rc.1/bin/linux/amd64/kubectl
-```
-
-Install the Kubernetes binaries:
-
-```
-chmod +x kube-apiserver kube-controller-manager kube-scheduler kubectl
-```
-
-```
-sudo mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/bin/
+sudo cp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem /var/lib/kubernetes/
 ```
 
 ### Kubernetes API Server
@@ -86,174 +56,148 @@ sudo mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/bin/
 Capture the internal IP address of the machine:
 
 ```
-INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 ```
 
-Create the systemd unit file:
+Create the manifest file:
 
 ```
-cat > kube-apiserver.service <<EOF
-[Unit]
-Description=Kubernetes API Server
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-
-[Service]
-ExecStart=/usr/bin/kube-apiserver \\
-  --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \\
-  --advertise-address=${INTERNAL_IP} \\
-  --allow-privileged=true \\
-  --apiserver-count=3 \\
-  --audit-log-maxage=30 \\
-  --audit-log-maxbackup=3 \\
-  --audit-log-maxsize=100 \\
-  --audit-log-path=/var/lib/audit.log \\
-  --authorization-mode=RBAC \\
-  --bind-address=0.0.0.0 \\
-  --client-ca-file=/var/lib/kubernetes/ca.pem \\
-  --enable-swagger-ui=true \\
-  --etcd-cafile=/var/lib/kubernetes/ca.pem \\
-  --etcd-certfile=/var/lib/kubernetes/kubernetes.pem \\
-  --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem \\
-  --etcd-servers=https://10.240.0.10:2379,https://10.240.0.11:2379,https://10.240.0.12:2379 \\
-  --event-ttl=1h \\
-  --experimental-bootstrap-token-auth \\
-  --insecure-bind-address=0.0.0.0 \\
-  --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \\
-  --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem \\
-  --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem \\
-  --kubelet-https=true \\
-  --runtime-config=rbac.authorization.k8s.io/v1alpha1 \\
-  --service-account-key-file=/var/lib/kubernetes/ca-key.pem \\
-  --service-cluster-ip-range=10.32.0.0/24 \\
-  --service-node-port-range=30000-32767 \\
-  --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
-  --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem \\
-  --token-auth-file=/var/lib/kubernetes/token.csv \\
-  --v=2
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+mkdir -p /etc/kubernetes/manifests
+cat > apiserver.manifest << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: apiserver 
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  volumes:
+    - name: var-lib
+      hostPath:
+        path: /var/lib
+  containers:
+    - name: apiserver
+      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      args:
+        - /hyperkube
+        - apiserver
+        - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
+        - --advertise-address=${INTERNAL_IP}
+        - --allow-privileged=true
+        - --apiserver-count=3 
+        - --audit-log-maxage=30 
+        - --audit-log-maxbackup=3 
+        - --audit-log-maxsize=100 
+        - --audit-log-path=/var/lib/audit.log 
+        - --bind-address=0.0.0.0
+        - --client-ca-file=/var/lib/kubernetes/ca.pem
+        - --enable-swagger-ui=true
+        - --etcd-cafile=/var/lib/kubernetes/ca.pem 
+        - --etcd-certfile=/var/lib/kubernetes/kubernetes.pem
+        - --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem 
+        - --etcd-servers=https://10.180.0.10:2379,https://10.180.0.11:2379,https://10.180.0.12:2379
+        - --event-ttl=1h 
+        - --experimental-bootstrap-token-auth 
+        - --insecure-bind-address=0.0.0.0
+        - --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem 
+        - --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem 
+        - --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem 
+        - --kubelet-https=true 
+        - --runtime-config=rbac.authorization.k8s.io/v1alpha1 
+        - --service-account-key-file=/var/lib/kubernetes/ca-key.pem 
+        - --service-cluster-ip-range=10.180.1.0/24 
+        - --service-node-port-range=30000-32767 
+        - --tls-cert-file=/var/lib/kubernetes/kubernetes.pem 
+        - --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem 
+        - --token-auth-file=/var/lib/kubernetes/token.csv 
+      livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 8080
+        initialDelaySeconds: 15
+        timeoutSeconds: 1
+      volumeMounts:
+        - mountPath: /var/lib
+          name: var-lib
 EOF
+sudo mv apiserver.manifest /etc/kubernetes/manifests
 ```
 
-Start the `kube-apiserver` service:
-
-```
-sudo mv kube-apiserver.service /etc/systemd/system/
-```
-
-```
-sudo systemctl daemon-reload
-```
-
-```
-sudo systemctl enable kube-apiserver
-```
-
-```
-sudo systemctl start kube-apiserver
-```
-
-```
-sudo systemctl status kube-apiserver --no-pager
-```
 
 ### Kubernetes Controller Manager
 
 ```
-cat > kube-controller-manager.service <<EOF
-[Unit]
-Description=Kubernetes Controller Manager
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-
-[Service]
-ExecStart=/usr/bin/kube-controller-manager \\
-  --address=0.0.0.0 \\
-  --allocate-node-cidrs=true \\
-  --cluster-cidr=10.200.0.0/16 \\
-  --cluster-name=kubernetes \\
-  --cluster-signing-cert-file=/var/lib/kubernetes/ca.pem \\
-  --cluster-signing-key-file=/var/lib/kubernetes/ca-key.pem \\
-  --leader-elect=true \\
-  --master=http://${INTERNAL_IP}:8080 \\
-  --root-ca-file=/var/lib/kubernetes/ca.pem \\
-  --service-account-private-key-file=/var/lib/kubernetes/ca-key.pem \\
-  --service-cluster-ip-range=10.32.0.0/16 \\
-  --v=2
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+cat > controller-manager.manifest << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: controller-manager 
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  volumes:
+    - name: var-lib
+      hostPath:
+        path: /var/lib
+  containers:
+    - name: controller-manager 
+      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      args:
+        - /hyperkube
+        - controller-manager
+        - --address=0.0.0.0
+        - --allocate-node-cidrs=true 
+        - --cluster-cidr=10.180.128.0/17 
+        - --cluster-name=kubernetes 
+        - --cluster-signing-cert-file=/var/lib/kubernetes/ca.pem 
+        - --cluster-signing-key-file=/var/lib/kubernetes/ca-key.pem 
+        - --leader-elect=true 
+        - --master=http://${INTERNAL_IP}:8080 
+        - --root-ca-file=/var/lib/kubernetes/ca.pem 
+        - --service-account-private-key-file=/var/lib/kubernetes/ca-key.pem 
+        - --service-cluster-ip-range=10.180.1.0/24
+      livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 8080
+        initialDelaySeconds: 15
+        timeoutSeconds: 1
+      volumeMounts:
+        - mountPath: /var/lib
+          name: var-lib
 EOF
-```
-
-Start the `kube-controller-manager` service:
-
-```
-sudo mv kube-controller-manager.service /etc/systemd/system/
-```
-
-```
-sudo systemctl daemon-reload
-```
-
-```
-sudo systemctl enable kube-controller-manager
-```
-
-```
-sudo systemctl start kube-controller-manager
-```
-
-```
-sudo systemctl status kube-controller-manager --no-pager
+sudo mv controller-manager.manifest /etc/kubernetes/manifests
 ```
 
 ### Kubernetes Scheduler
-
 ```
-cat > kube-scheduler.service <<EOF
-[Unit]
-Description=Kubernetes Scheduler
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-
-[Service]
-ExecStart=/usr/bin/kube-scheduler \\
-  --leader-elect=true \\
-  --master=http://${INTERNAL_IP}:8080 \\
-  --v=2
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+cat > scheduler.manifest << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name:  scheduler 
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  containers:
+    - name: scheduler
+      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      args:
+        - /hyperkube
+        - scheduler 
+        - --leader-elect=true 
+        - --master=http://${INTERNAL_IP}:8080 
+      livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 8080
+        initialDelaySeconds: 15
+        timeoutSeconds: 1
 EOF
-```
-
-Start the `kube-scheduler` service:
-
-```
-sudo mv kube-scheduler.service /etc/systemd/system/
-```
-
-```
-sudo systemctl daemon-reload
-```
-
-```
-sudo systemctl enable kube-scheduler
-```
-
-```
-sudo systemctl start kube-scheduler
-```
-
-```
-sudo systemctl status kube-scheduler --no-pager
+sudo mv scheduler.manifest /etc/kubernetes/manifests
 ```
 
 ### Verification
@@ -271,7 +215,7 @@ etcd-1               Healthy   {"health": "true"}
 etcd-2               Healthy   {"health": "true"}  
 ```
 
-> Remember to run these steps on `controller0`, `controller1`, and `controller2`
+> Remember to run these steps on `master0`, `master1`, and `master2`
 
 ## Setup Kubernetes API Server Frontend Load Balancer
 
