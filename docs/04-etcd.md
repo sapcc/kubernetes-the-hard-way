@@ -21,52 +21,8 @@ However, all the e2e tested configurations currently run etcd on the master node
 
 Run the following commands on `master0`, `master1`, `master2`:
 
-### TLS Certificates
-
-The TLS certificates created in the [Setting up a CA and TLS Cert Generation](02-certificate-authority.md) lab will be used to secure communication between the Kubernetes API server and the etcd cluster. The TLS certificates will also be used to limit access to the etcd cluster using TLS client authentication. Only clients with a TLS certificate signed by a trusted CA will be able to access the etcd cluster.
-
-Copy the TLS certificates to the etcd configuration directory:
-
 ```
-sudo mkdir -p /etc/etcd/
-```
-
-```
-sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
-```
-
-### Setup the Kubelet Service
-
-On every host we will deploy and control all components with containers. To orchestrate startup and liveness we will rely on the Kubernetes `kubelet` as
-supervisor.
-
-```
-cat > kubelet.service <<EOF
-[Service]
-Environment=KUBELET_IMAGE_TAG=v1.6.1_coreos.0
-Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
-  --mount volume=resolv,target=/etc/resolv.conf \
-  --uuid-file-save=/var/run/kubelet-pod.uuid"
-ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
-ExecStart=/usr/lib/coreos/kubelet-wrapper \
-  --pod-manifest-path=/etc/kubernetes/manifests
-ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
-Restart=always
-RestartSec=10
-[Install]
-WantedBy=multi-user.target
-EOF
-```
-
-Move the service file to the right location
-```
-sudo cp kubelet.service /etc/systemd/system/
-```
-
-Start the kubelet
-```
-sudo systemctl enable kubelet
-sudo systemctl start kubelet
+INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 ```
 
 ### Setup ETCD Data Directory
@@ -79,12 +35,6 @@ sudo mkdir -p /var/lib/etcd
 
 ### Set The Internal IP Address
 
-The internal IP address will be used by etcd to serve client requests and communicate with other etcd peers.
-
-```
-INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-```
-
 Each etcd member must have a unique name within an etcd cluster. Set the etcd name:
 
 ```
@@ -94,7 +44,6 @@ ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 11)
 Create the manifest file:
 
 ```
-sudo mkdir -p /etc/kubernetes/manifests
 cat > etcd.manifest << EOF
 apiVersion: v1
 kind: Pod
@@ -104,9 +53,9 @@ metadata:
 spec:
   hostNetwork: true
   volumes:
-    - name: etcd-etcd
+    - name: etc-kubernetes
       hostPath:
-        path: /etc/etcd
+        path: /etc/kubernetes
     - name: var-lib-etcd
       hostPath:
         path: /var/lib/etcd
@@ -131,21 +80,21 @@ spec:
         - name: ETCD_LISTEN_CLIENT_URLS
           value: http://127.0.0.1:2379,https://${INTERNAL_IP}:2379
         - name: ETCD_CERT_FILE
-          value: /etc/etcd/kubernetes.pem
+          value: /etc/kubernetes/kubernetes.pem
         - name: ETCD_KEY_FILE
-          value: /etc/etcd/kubernetes-key.pem
+          value: /etc/kubernetes/kubernetes-key.pem
         - name: ETCD_CLIENT_CERT_AUTH
           value: "true"
         - name: ETCD_TRUSTED_CA_FILE
-          value: /etc/etcd/ca.pem
+          value: /etc/kubernetes/ca.pem
         - name: ETCD_PEER_CERT_FILE
-          value: /etc/etcd/kubernetes.pem
+          value: /etc/kubernetes/kubernetes.pem
         - name: ETCD_PEER_KEY_FILE
-          value: /etc/etcd/kubernetes-key.pem
+          value: /etc/kubernetes/kubernetes-key.pem
         - name: ETCD_PEER_CLIENT_CERT_AUTH
           value: "true"
         - name: ETCD_PEER_TRUSTED_CA_FILE
-          value: /etc/etcd/ca.pem
+          value: /etc/kubernetes/ca.pem
       livenessProbe:
         httpGet:
           host: 127.0.0.1
@@ -156,8 +105,8 @@ spec:
       volumeMounts:
         - name: var-lib-etcd
           mountPath: /var/lib/etcd
-        - name: etcd-etcd
-          mountPath: /etc/etcd
+        - name: etc-kubernetes
+          mountPath: /etc/kubernetes
 EOF
 sudo mv etcd.manifest /etc/kubernetes/manifests/
 ```
