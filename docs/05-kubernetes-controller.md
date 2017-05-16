@@ -27,30 +27,6 @@ Each component is being run on the same machine for the following reasons:
 
 Run the following commands on `master0`, `master1`, `master2`:
 
-> Login to each machine using the gcloud compute ssh command
-
----
-
-Copy the bootstrap token into place:
-
-```
-sudo mkdir -p /var/lib/kubernetes/
-```
-
-```
-sudo mv token.csv /var/lib/kubernetes/
-```
-
-### TLS Certificates
-
-The TLS certificates created in the [Setting up a CA and TLS Cert Generation](02-certificate-authority.md) lab will be used to secure communication between the Kubernetes API server and Kubernetes clients such as `kubectl` and the `kubelet` agent. The TLS certificates will also be used to authenticate the Kubernetes API server to etcd via TLS client auth.
-
-Copy the TLS certificates to the Kubernetes configuration directory:
-
-```
-sudo cp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem /var/lib/kubernetes/
-```
-
 ### Kubernetes API Server
 
 Capture the internal IP address of the machine:
@@ -62,7 +38,6 @@ INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 Create the manifest file:
 
 ```
-mkdir -p /etc/kubernetes/manifests
 cat > apiserver.manifest << EOF
 apiVersion: v1
 kind: Pod
@@ -72,9 +47,9 @@ metadata:
 spec:
   hostNetwork: true
   volumes:
-    - name: var-lib
+    - name: etc-kubernetes
       hostPath:
-        path: /var/lib
+        path: /etc/kubernetes
   containers:
     - name: apiserver
       image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
@@ -90,26 +65,28 @@ spec:
         - --audit-log-maxsize=100 
         - --audit-log-path=/var/lib/audit.log 
         - --bind-address=0.0.0.0
-        - --client-ca-file=/var/lib/kubernetes/ca.pem
+        - --client-ca-file=/etc/kubernetes/ca.pem
         - --enable-swagger-ui=true
-        - --etcd-cafile=/var/lib/kubernetes/ca.pem 
-        - --etcd-certfile=/var/lib/kubernetes/kubernetes.pem
-        - --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem 
+        - --etcd-cafile=/etc/kubernetes/ca.pem 
+        - --etcd-certfile=/etc/kubernetes/kubernetes.pem
+        - --etcd-keyfile=//etc/kubernetes/kubernetes-key.pem 
         - --etcd-servers=https://10.180.0.10:2379,https://10.180.0.11:2379,https://10.180.0.12:2379
         - --event-ttl=1h 
         - --experimental-bootstrap-token-auth 
         - --insecure-bind-address=0.0.0.0
-        - --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem 
-        - --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem 
-        - --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem 
+        - --kubelet-certificate-authority=/etc/kubernetes/ca.pem 
+        - --kubelet-client-certificate=/etc/kubernetes/kubernetes.pem 
+        - --kubelet-client-key=/etc/kubernetes/kubernetes-key.pem 
         - --kubelet-https=true 
         - --runtime-config=rbac.authorization.k8s.io/v1alpha1 
-        - --service-account-key-file=/var/lib/kubernetes/ca-key.pem 
+        - --service-account-key-file=/etc/kubernetes/ca-key.pem 
         - --service-cluster-ip-range=10.180.1.0/24 
         - --service-node-port-range=30000-32767 
-        - --tls-cert-file=/var/lib/kubernetes/kubernetes.pem 
-        - --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem 
-        - --token-auth-file=/var/lib/kubernetes/token.csv 
+        - --tls-cert-file=/etc/kubernetes/kubernetes.pem 
+        - --tls-private-key-file=/etc/kubernetes/kubernetes-key.pem 
+        - --token-auth-file=/etc/kubernetes/token.csv 
+        - --cloud-config=/etc/kubernetes/openstack.config 
+        - --cloud-provider=openstack 
       livenessProbe:
       httpGet:
         host: 127.0.0.1
@@ -118,8 +95,8 @@ spec:
         initialDelaySeconds: 15
         timeoutSeconds: 1
       volumeMounts:
-        - mountPath: /var/lib
-          name: var-lib
+        - mountPath: /etc/kubernetes
+          name: etc-kubernetes
 EOF
 sudo mv apiserver.manifest /etc/kubernetes/manifests
 ```
@@ -137,9 +114,9 @@ metadata:
 spec:
   hostNetwork: true
   volumes:
-    - name: var-lib
+    - name: etc-kubernetes
       hostPath:
-        path: /var/lib
+        path: /etc/kubernetes
   containers:
     - name: controller-manager 
       image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
@@ -150,13 +127,14 @@ spec:
         - --allocate-node-cidrs=true 
         - --cluster-cidr=10.180.128.0/17 
         - --cluster-name=kubernetes 
-        - --cluster-signing-cert-file=/var/lib/kubernetes/ca.pem 
-        - --cluster-signing-key-file=/var/lib/kubernetes/ca-key.pem 
+        - --cluster-signing-cert-file=/etc/kubernetes/ca.pem 
+        - --cluster-signing-key-file=/etc/kubernetes/ca-key.pem 
         - --leader-elect=true 
         - --master=http://${INTERNAL_IP}:8080 
         - --root-ca-file=/var/lib/kubernetes/ca.pem 
-        - --service-account-private-key-file=/var/lib/kubernetes/ca-key.pem 
         - --service-cluster-ip-range=10.180.1.0/24
+        - --cloud-config=/etc/kubernetes/openstack.config 
+        - --cloud-provider=openstack 
       livenessProbe:
       httpGet:
         host: 127.0.0.1
@@ -165,8 +143,8 @@ spec:
         initialDelaySeconds: 15
         timeoutSeconds: 1
       volumeMounts:
-        - mountPath: /var/lib
-          name: var-lib
+        - mountPath: /etc/kubernetes
+          name: etc-kubernetes
 EOF
 sudo mv controller-manager.manifest /etc/kubernetes/manifests
 ```
@@ -219,35 +197,50 @@ etcd-2               Healthy   {"health": "true"}
 
 ## Setup Kubernetes API Server Frontend Load Balancer
 
-The virtual machines created in this tutorial will not have permission to complete this section. Run the following commands from the same place used to create the virtual machines for this tutorial.
-
+Create a load balancer:
 ```
-gcloud compute http-health-checks create kube-apiserver-health-check \
-  --description "Kubernetes API Server Health Check" \
-  --port 8080 \
-  --request-path /healthz
+neutron lbaas-loadbalancer-create --name masters-lb $NETWORK
 ```
 
+Create and fill the pool with out master nodes:
 ```
-gcloud compute target-pools create kubernetes-target-pool \
-  --http-health-check=kube-apiserver-health-check
-```
-
-```
-gcloud compute target-pools add-instances kubernetes-target-pool \
-  --instances controller0,controller1,controller2
+neutron lbaas-pool-create --lb-algorithm ROUND_ROBIN --protocol TCP --name masters-pool --loadbalancer masters-lb
+neutron lbaas-member-create --subnet $SUBNET --protocol-port 6443 --address 10.180.0.10 masters-pool
+neutron lbaas-member-create --subnet $SUBNET --protocol-port 6443 --address 10.180.0.11 masters-pool
+neutron lbaas-member-create --subnet $SUBNET --protocol-port 6443 --address 10.180.0.12 masters-pool
 ```
 
+Create a health check:
 ```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
+neutron lbaas-healthmonitor-create --name masters-health --delay 5 --max-retries 2 --timeout 3 --type TCP --pool masters-pool 
 ```
 
+Create a listener:
 ```
-gcloud compute forwarding-rules create kubernetes-forwarding-rule \
-  --address ${KUBERNETES_PUBLIC_ADDRESS} \
-  --ports 6443 \
-  --target-pool kubernetes-target-pool \
-  --region us-central1
+neutron lbaas-listener-create --protocol TCP --protocol-port 443 --loadbalancer master --default-pool masters-pool --name masters-listener
 ```
+
+Attach our previously reserved floating-ip:
+
+```
+neutron port-list
++--------------------------------------+----------------------------------------------------------------------------------------+-------------------+------------------------------------------------------------------------------------+
+| id                                   | name                                                                                   | mac_address       | fixed_ips                                                                          |
++--------------------------------------+----------------------------------------------------------------------------------------+-------------------+------------------------------------------------------------------------------------+
+| 08899903-ca6c-42a0-b210-f8a380dfcd80 | loadbalancer-abb068fc-d6ed-4a81-b424-b95a5f775bcc                                      | fa:16:3e:8b:54:99 | {"subnet_id": "83aab941-87f4-4372-9fbc-9f702092e3cf", "ip_address": "10.180.0.7"}  |
+...
++--------------------------------------+----------------------------------------------------------------------------------------+-------------------+------------------------------------------------------------------------------------+
+
+
+neutron floatingip-list
++--------------------------------------+------------------+---------------------+--------------------------------------+
+| id                                   | fixed_ip_address | floating_ip_address | port_id                              |
++--------------------------------------+------------------+---------------------+--------------------------------------+
+| cacce782-68b6-4944-87c6-3640c94f7159 |                  | 10.47.40.33         |                                      |
+| 9a4bff45-d72c-4777-a5b1-abe5e76de613 | 10.180.0.30      | 10.47.41.49         | 848396d3-5e18-4410-9a7f-949295428e3f |
++--------------------------------------+------------------+---------------------+--------------------------------------+
+
+neutron floatingip-associate cacce782-68b6-4944-87c6-3640c94f7159 08899903-ca6c-42a0-b210-f8a380dfcd80
+```
+
+
