@@ -12,7 +12,7 @@ The target audience for this tutorial is someone planning to support a productio
 
 ## Cluster Details
 
-* Kubernetes 1.6.1
+* Kubernetes 1.6.3
 * Openstack Cloud Provider Integration
 * Docker 1.12.6
 * etcd 3.1.4
@@ -37,7 +37,7 @@ This tutorial assumes you have access to an Openstack and have setup the Opensta
 * [Cloud Infrastructure Provisioning](docs/01-infrastructure.md)
 * [Setting up a CA and TLS Cert Generation](docs/02-certificate-authority.md)
 * [Setting up TLS Client Bootstrap and RBAC Authentication](docs/03-auth-configs.md)
-* [Setting up the Openstack Cloud Provider](docs/035-openstack-config.md)
+* [Bootstrapping Kubelets](docs/035-kubelet.md)
 * [Bootstrapping a H/A etcd cluster](docs/04-etcd.md)
 * [Bootstrapping a H/A Kubernetes Control Plane](docs/05-kubernetes-controller.md)
 * [Bootstrapping Kubernetes Workers](docs/06-kubernetes-worker.md)
