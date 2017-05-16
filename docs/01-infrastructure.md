@@ -41,7 +41,7 @@ OS_REGION_NAME=eu-de-1
 ```
 
 ```
-docker run -ti --env-file lab_rc --volume (pwd):/config hub.global.cloud.sap/monsoon/cc-openstack-cli:latest -- bash
+docker run -ti --env-file lab_rc hub.global.cloud.sap/monsoon/cc-openstack-cli:latest -- bash
 ```
 
 ## Setup Networking
