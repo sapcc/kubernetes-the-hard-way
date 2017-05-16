@@ -87,11 +87,11 @@ cat > ca-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "DE",
+      "L": "Berlin",
       "O": "Kubernetes",
       "OU": "CA",
-      "ST": "Oregon"
+      "ST": "Berlin"
     }
   ]
 }
@@ -130,11 +130,11 @@ cat > admin-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "DE",
+      "L": "Berlin",
       "O": "system:masters",
       "OU": "Cluster",
-      "ST": "Oregon"
+      "ST": "Berlin"
     }
   ]
 }
@@ -174,11 +174,11 @@ cat > kube-proxy-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "DE",
+      "L": "Berlin",
       "O": "system:node-proxier",
       "OU": "Cluster",
-      "ST": "Oregon"
+      "ST": "Berlin"
     }
   ]
 }
@@ -214,10 +214,9 @@ cat > kubernetes-csr.json <<EOF
 {
   "CN": "kubernetes",
   "hosts": [
-    "10.32.0.1",
-    "10.240.0.10",
-    "10.240.0.11",
-    "10.240.0.12",
+    "10.180.0.10",
+    "10.180.0.11",
+    "10.180.0.12",
     "${KUBERNETES_PUBLIC_ADDRESS}",
     "127.0.0.1",
     "kubernetes.default"
@@ -228,11 +227,11 @@ cat > kubernetes-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "DE",
+      "L": "Berlin",
       "O": "Kubernetes",
       "OU": "Cluster",
-      "ST": "Oregon"
+      "ST": "Berlin"
     }
   ]
 }
@@ -273,12 +272,10 @@ We are now on the gateway and have agent forwarding on.
 Now we can distribute the keys:
 
 ```
+scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.10:~/
 scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.11:~/
-```
-Repeat for every master.
-
-
-```
+scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem 10.180.0.12:~/
 scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.20:~/
+scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.21:~/
+scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.22:~/
 ```
-Repeat for every minion.
