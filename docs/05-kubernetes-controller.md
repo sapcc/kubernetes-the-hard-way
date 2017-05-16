@@ -180,17 +180,38 @@ sudo mv scheduler.manifest /etc/kubernetes/manifests
 
 ### Verification
 
-```
-kubectl get componentstatuses
-```
+There should now be 6 containers running:
 
 ```
-NAME                 STATUS    MESSAGE              ERROR
-controller-manager   Healthy   ok                   
-scheduler            Healthy   ok                   
-etcd-0               Healthy   {"health": "true"}   
-etcd-1               Healthy   {"health": "true"}   
-etcd-2               Healthy   {"health": "true"}  
+docker ps
+CONTAINER ID        IMAGE                                                                                              COMMAND                  CREATED             STATUS              PORTS               NAMES
+b49023226e8c        quay.io/coreos/hyperkube@sha256:7ced4a382599959c5734a7df517075045e53257e0b316f24ed3e0c783191d026   "/hyperkube controlle"   16 minutes ago      Up 16 minutes                           k8s_controller-manager_controller-manager-master0_kube-system_d484fa3545b5bb3c4e17cde9feb2052c_0
+cf30455aaa36        gcr.io/google_containers/pause-amd64:3.0                                                           "/pause"                 16 minutes ago      Up 16 minutes                           k8s_POD_controller-manager-master0_kube-system_d484fa3545b5bb3c4e17cde9feb2052c_0
+4518a60e179a        quay.io/coreos/hyperkube@sha256:7ced4a382599959c5734a7df517075045e53257e0b316f24ed3e0c783191d026   "/hyperkube apiserver"   27 minutes ago      Up 27 minutes                           k8s_apiserver_apiserver-master0_kube-system_88220154ada103f7554889d274a7b2d0_0
+48a50a86bd98        gcr.io/google_containers/pause-amd64:3.0                                                           "/pause"                 27 minutes ago      Up 27 minutes                           k8s_POD_apiserver-master0_kube-system_88220154ada103f7554889d274a7b2d0_0
+c56b42649123        quay.io/coreos/etcd@sha256:23e46a0b54848190e6a15db6f5b855d9b5ebcd6abd385c80aeba4870121356ec        "/usr/local/bin/etcd"    29 minutes ago      Up 29 minutes                           k8s_etcd_etcd-master0_kube-system_2114fdc971582767170c42a49e73d92b_3
+d8ad37ce38f6        gcr.io/google_containers/pause-amd64:3.0                                                           "/pause"                 29 minutes ago      Up 29 minutes                           k8s_POD_etcd-master0_kube-system_2114fdc971582767170c42a49e73d92b_0 
+```
+
+Not all containers running? Check with `docker ps -a` if they died unexpectely.
+Grab their logs with `docker logs b49023226e8c`. Still nothing? Check the `kubelet` with `journalctl -u kubelet`.
+
+
+The `kubelets` will register themselves automatically and setup a static route
+for their pods. The router should look similar to:
+
+```
+neutron router-show $ROUTER_ID
++-------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                                           | Value                                                                                                                                                  |
++-------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| id                                              | 29635b60-d79f-4536-8144-b2271031461d                                                                                                                   |
+| name                                            | kthw-router                                                                                                                                            |
+| routes                                          | {"destination": "10.180.131.0/24", "nexthop": "10.180.0.10"}                                                                                           |
+|                                                 | {"destination": "10.180.128.0/24", "nexthop": "10.180.0.11"}                                                                                           |
+|                                                 | {"destination": "10.180.129.0/24", "nexthop": "10.180.0.12"}                                                                                           |
+...
++-------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
 
 > Remember to run these steps on `master0`, `master1`, and `master2`
@@ -241,6 +262,13 @@ neutron floatingip-list
 +--------------------------------------+------------------+---------------------+--------------------------------------+
 
 neutron floatingip-associate cacce782-68b6-4944-87c6-3640c94f7159 08899903-ca6c-42a0-b210-f8a380dfcd80
+```
+
+### Verification
+
+```
+curl -k https://10.47.40.33/healthz
+Unauthorized
 ```
 
 
