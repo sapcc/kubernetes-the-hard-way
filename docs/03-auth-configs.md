@@ -76,7 +76,7 @@ kubectl config set-cluster kubernetes-the-hard-way \
   --certificate-authority=ca.pem \
   --embed-certs=true \
   --server=https://localhost:6443
-  --kubeconfig=kubelet.kubeconfig
+  --kubeconfig=master.kubeconfig
 ```
 
 ```
@@ -84,21 +84,21 @@ kubectl config set-credentials kubelet \
   --client-certificate=kubelet.pem \
   --client-key=kubelet-key.pem \
   --embed-certs=true \
-  --kubeconfig=kubelet.kubeconfig
+  --kubeconfig=master.kubeconfig
 ```
 
 ```
 kubectl config set-context default \
   --cluster=kubernetes-the-hard-way \
   --user=kubelet \
-  --kubeconfig=kubelet.kubeconfig
+  --kubeconfig=master.kubeconfig
 ```
 
 ```
-kubectl config use-context default --kubeconfig=kubelet.kubeconfig
+kubectl config use-context default --kubeconfig=master.kubeconfig
 ```
 
-### Create the bootstrap kubeconfig file
+### Create the minion-bootstrap kubeconfig file
 
 ```
 kubectl config set-cluster kubernetes-the-hard-way \
@@ -185,9 +185,9 @@ EOF
 ```
 scp *config token.csv core@$GATEWAY:~/
 ssh -A core@$GATEWAY
-scp kubelet.kubeconfig openstack.config token.csv core@10.180.0.10:~/
-scp kubelet.kubeconfig openstack.config token.csv core@10.180.0.11:~/
-scp kubelet.kubeconfig openstack.config token.csv core@10.180.0.12:~/
+scp master.kubeconfig openstack.config token.csv core@10.180.0.10:~/
+scp master.kubeconfig openstack.config token.csv core@10.180.0.11:~/
+scp master.kubeconfig openstack.config token.csv core@10.180.0.12:~/
 scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.20:~/
 scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.21:~/
 scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.22:~/
