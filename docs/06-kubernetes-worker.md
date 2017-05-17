@@ -57,6 +57,7 @@ ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --allow-privileged=true \
   --network-plugin=kubenet \
   --require-kubeconfig \
+  --pod-manifest-path=/etc/kubernetes/manifests \
   --kubeconfig=/etc/kubernetes/minion.kubeconfig \
   --experimental-bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
   --cert-dir=/etc/kubernetes
