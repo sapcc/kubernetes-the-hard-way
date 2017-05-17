@@ -168,13 +168,13 @@ All the VMs in this lab will be provisioned using Container Linux.
 ### Fixed IPs
 
 ```
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.10 --name master0 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.11 --name master1 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.12 --name master2 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.20 --name minion0 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.21 --name minion1 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.22 --name minion2 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.30 --name gateway $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.10 --name master0 --dns_name master0 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.11 --name master1 --dns_name master1 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.12 --name master2 --dns_name master2 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.20 --name minion0 --dns_name minino0 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.21 --name minion1 --dns_name minino1 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.22 --name minion2 --dns_name minino2 $NETWORK
+neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.30 --name gateway --dns_name gateway $NETWORK
 ```
 
 ```
