@@ -42,6 +42,39 @@ sudo mkdir -p /etc/kubernetes/manifests
 sudo cp * /etc/kubernetes
 ```
 
+### Setup the Kubelet Service
+
+```
+cat > kubelet.service <<EOF
+[Service]
+Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
+Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
+  --mount volume=resolv,target=/etc/resolv.conf \
+  --uuid-file-save=/var/run/kubelet-pod.uuid"
+ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
+ExecStart=/usr/lib/coreos/kubelet-wrapper \
+  --cloud-config=/etc/kubernetes/openstack.config \
+  --cloud-provider=openstack \
+  --network-plugin=kubenet \
+  --require-kubeconfig \
+  --pod-manifest-path=/etc/kubernetes/manifests \
+  --kubeconfig=/etc/kubernetes/master.kubeconfig \
+  --register-with-taints=node-role.kubernetes.io/master=:NoSchedule 
+ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo cp kubelet.service /etc/systemd/system/
+```
+
+Start the kubelet
+```
+sudo systemctl enable kubelet
+sudo systemctl start kubelet
+```
+
 ### Provision Etcd 
 
 All Kubernetes components are stateless which greatly simplifies managing a Kubernetes cluster. All state is stored
@@ -158,40 +191,6 @@ member 3a57933972cb5131 is healthy: got healthy result from https://10.240.0.12:
 member f98dc20bce6225a0 is healthy: got healthy result from https://10.240.0.10:2379
 member ffed16798470cab5 is healthy: got healthy result from https://10.240.0.11:2379
 cluster is healthy
-```
-
-
-### Setup the Kubelet Service
-
-```
-cat > kubelet.service <<EOF
-[Service]
-Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
-Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
-  --mount volume=resolv,target=/etc/resolv.conf \
-  --uuid-file-save=/var/run/kubelet-pod.uuid"
-ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
-ExecStart=/usr/lib/coreos/kubelet-wrapper \
-  --cloud-config=/etc/kubernetes/openstack.config \
-  --cloud-provider=openstack \
-  --network-plugin=kubenet \
-  --require-kubeconfig \
-  --kubeconfig=/etc/kubernetes/master.kubeconfig \
-  --pod-manifest-path=/etc/kubernetes/manifests \
-  --register-with-taints=node-role.kubernetes.io/master=:NoSchedule 
-ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
-Restart=always
-RestartSec=10
-[Install]
-WantedBy=multi-user.target
-EOF
-sudo cp kubelet.service /etc/systemd/system/
-```
-
-Start the kubelet
-```
-sudo systemctl enable kubelet
-sudo systemctl start kubelet
 ```
 
 ### Kubernetes API Server
