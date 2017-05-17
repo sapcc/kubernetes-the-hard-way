@@ -59,36 +59,6 @@ kubectl config set-context kubernetes-the-hard-way \
 kubectl config use-context kubernetes-the-hard-way
 ```
 
-At this point you should be able to connect securly to the remote API server:
-
-```
-kubectl get nodes 
-```
-
-```
-NAME      STATUS    AGE       VERSION
-master0   Ready     2h        v1.6.3+coreos.0
-master1   Ready     36m       v1.6.3+coreos.0
-master2   Ready     35m       v1.6.3+coreos.0
-```
-
-You can also see the mirrored, static pods:
-
-```
-kubectl get pods --namespace=kube-system
-```
-
-```
-NAMESPACE     NAME                         READY     STATUS    RESTARTS   AGE
-kube-system   apiserver-master0            1/1       Running   0          1h
-kube-system   apiserver-master1            1/1       Running   0          37m
-kube-system   apiserver-master2            1/1       Running   0          36m
-kube-system   controller-manager-master0   1/1       Running   0          1h
-kube-system   controller-manager-master1   1/1       Running   0          37m
-kube-system   controller-manager-master2   1/1       Running   0          36m
-kube-system   etcd-master0                 1/1       Running   3          38m
-kube-system   etcd-master1                 1/1       Running   0          37m
-kube-system   etcd-master2                 1/1       Running   0          36m`
-```
+Once you have created the master nodes, you should be able to connect securly to the remote API server. 
 
 
