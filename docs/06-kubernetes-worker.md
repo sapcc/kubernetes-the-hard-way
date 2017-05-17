@@ -111,7 +111,7 @@ spec:
       securityContext:
         privileged: true
 EOF
-sudo mv kube-proxy.manifestt /etc/kubernetes/manifests
+sudo mv kube-proxy.manifest /etc/kubernetes/manifests
 ```
 
 > Remember to run these steps on `minion0`, `minion1`, and `minion2`
