@@ -261,9 +261,9 @@ cat > kubernetes-csr.json <<EOF
 {
   "CN": "kubernetes",
   "hosts": [
-    "10.180.0.10",
-    "10.180.0.11",
-    "10.180.0.12",
+    "10.180.0.100",
+    "10.180.0.101",
+    "10.180.0.102",
     "${KUBERNETES_PUBLIC_ADDRESS}",
     "127.0.0.1",
     "localhost",
@@ -306,24 +306,13 @@ kubernetes.pem
 
 ## Distribute the TLS certificates
 
-Set the list of Kubernetes hosts where the certs should be copied to:
-
 The following commands will copy the TLS certificates and keys to each Kubernetes host using the gateway we created.
 
-First everything on the gateway:
 ```
-scp *.pem core@$GATEWAY:~/
-ssh -A core@$GATEWAY
-```
-We are now on the gateway and have agent forwarding on.
-
-Now we can distribute the keys:
-
-```
-scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem 10.180.0.10:~/
-scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem 10.180.0.11:~/
-scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem 10.180.0.12:~/
-scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.20:~/
-scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.21:~/
-scp ca.pem kube-proxy.pem kube-proxy-key.pem 10.180.0.22:~/
+scp -oProxyJump=core@$GATEWAY:22 ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem core@10.180.0.100:~/
+scp -oProxyJump=core@$GATEWAY:22 ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem core@10.180.0.101:~/
+scp -oProxyJump=core@$GATEWAY:22 ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem kubelet.pem kubelet-key.pem core@10.180.0.102:~/
+scp -oProxyJump=core@$GATEWAY:22 ca.pem kube-proxy.pem kube-proxy-key.pem core@10.180.0.200:~/
+scp -oProxyJump=core@$GATEWAY:22 ca.pem kube-proxy.pem kube-proxy-key.pem core@10.180.0.201:~/
+scp -oProxyJump=core@$GATEWAY:22 ca.pem kube-proxy.pem kube-proxy-key.pem core@10.180.0.202:~/
 ```
