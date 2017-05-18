@@ -110,3 +110,53 @@ Commercial support is available at
 </body>
 </html>
 ```
+
+## Creating a Persitent Volume
+
+Here we will create a volume claim:
+
+```
+cat <<EOF |
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: www 
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+EOF
+./kubectl create -f -
+```
+
+This will auto-provision a cinder volume:
+
+```
+kubectl get pv
+```
+```
+NAME                                       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM         STORAGECLASS   REASON    AGE
+pvc-1e8d5024-3baf-11e7-914e-fa163e7d628d   8Gi        RWO           Delete          Bound     default/www   standard                 4m
+```
+
+
+cat <<EOF |
+apiVersion: v1
+kind: Pod 
+metadata:
+  name: pvcnginx
+spec:
+  containers:
+  - name: server
+    image: nginx
+    volumeMounts:
+      - mountPath: /var/lib/www/html
+        name: mypvc
+  volumes:
+    - name: mypvc
+      persistentVolumeClaim:
+        claimName: myclaim 
+EOF
+./kubectl create -f -

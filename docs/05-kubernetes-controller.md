@@ -483,3 +483,20 @@ kubectl get logs apiserver-master0 --namespace=kube-system
 Take note that what you see here are mirror pods. They reflect the status of
 the static pods which we provisioned with the above manifest files. Modifying
 or deleting these "mirrors" will **NOT** change the actual manifest file.
+
+### Storage Class Setup
+
+Now that we have a working `kubectl` we can do a final administrative task and
+setup the default StorageClass:
+
+```
+cat <<EOF |
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/cinder
+./kubectl create -f -
+```
