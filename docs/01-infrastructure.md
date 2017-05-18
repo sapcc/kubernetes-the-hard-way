@@ -47,33 +47,32 @@ docker run -ti --env-file lab_rc hub.global.cloud.sap/monsoon/cc-openstack-cli:l
 
 ## Setup Networking
 
+We're going to be using the following network ranges:
+VMs: 10.180.0.0/24
+Services: 10.180.1.0/24
+Pods: 10.180.128.0/17
 
 Create a custom network:
 
 ```
 neutron net-create kthw-net
-export NETWORK=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
 Create a subnet for the Kubernetes cluster:
 
 ```
-neutron subnet-create --name khw-subnet $NETWORK 10.180.0.0/24
-export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
+neutron subnet-create --name kthw-subnet kthw-net 10.180.0.0/24
 ```
 
 Create a router for the kubernetes network:
 ```
 neutron router-create kthw-router
-export ROUTER_ID=33c35501-1b53-4e3f-8ee1-0726f9913ec0
-neutron router-interface-add $ROUTER_ID subnet=$SUBNET
+neutron router-interface-add kthw-router subnet=kthw-subnet
 ```
 
 Connect it to the gateway of the external network:
 ```
-neutron net-list
-export EXTERNAL_NETWORK=f55c8e3d-c798-4c6c-9f7e-eeb6600f6aed
-neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK
+neutron router-gateway-set kthw-router FloatingIP-external-monsoon3
 ```
 
 ### Create the Kubernetes Public Address
@@ -81,42 +80,41 @@ neutron router-gateway-set $ROUTER_ID $EXTERNAL_NETWORK
 Create a public IP address that will be used by remote clients to connect to the Kubernetes control plane:
 
 ```
-neutron floatingip-create $EXTERNAL_NETWORK
+neutron floatingip-create FloatingIP-external-monsoon3
 export KUBERNETES_PUBLIC_ADDRESS=10.47.40.96
 ```
 
 ### Create Firewall Rules
 
 ```
-neutron security-group-create kubernetes-the-hard-way
-export SECGROUP=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
+neutron security-group-create kthw-secgroup
 ```
 
 Allow TCP/UDP/ICMP between instances on the private network:
 ```
-neutron security-group-rule-create --description allow-internal --direction ingress --protocol tcp --remote-ip-prefix 10.180.0.0/16 $SECGROUP
-neutron security-group-rule-create --description allow-internal --direction ingress --protocol udp --remote-ip-prefix 10.180.0.0/16 $SECGROUP
-neutron security-group-rule-create --description allow-internal --direction ingress --protocol icmp --remote-ip-prefix 10.180.0.0/16 $SECGROUP
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol tcp --remote-ip-prefix 10.180.0.0/24 kthw-secgroup
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol udp --remote-ip-prefix 10.180.0.0/24 kthw-secgroup
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol icmp --remote-ip-prefix 10.180.0.0/24 kthw-secgroup
 ```
 
-Allow TCP/UDP/ICMP between containes on the pod network:
+Allow TCP/UDP/ICMP between containers on the pod network:
 ```
-neutron security-group-rule-create --description allow-internal --direction ingress --protocol tcp --remote-ip-prefix 10.200.0.0/16 $SECGROUP
-neutron security-group-rule-create --description allow-internal --direction ingress --protocol udp --remote-ip-prefix 10.200.0.0/16 $SECGROUP
-neutron security-group-rule-create --description allow-internal --direction ingress --protocol icmp --remote-ip-prefix 10.200.0.0/16 $SECGROUP
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol tcp --remote-ip-prefix 10.180.128.0/17 kthw-secgroup
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol udp --remote-ip-prefix 10.180.128.0/17 kthw-secgroup
+neutron security-group-rule-create --description allow-internal --direction ingress --protocol icmp --remote-ip-prefix 10.180.128.0/17 kthw-secgroup
 ```
 
 Allow external traffic:
 ```
-neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 22 --port-range-max 22 --remote-ip-prefix 0.0.0.0/0 $SECGROUP
-neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 6443 --port-range-max 6443 --remote-ip-prefix 0.0.0.0/0 $SECGROUP
-neutron security-group-rule-create --description allow-external --direction ingress --protocol icmp --remote-ip-prefix 0.0.0.0/0 $SECGROUP
+neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 22 --port-range-max 22 --remote-ip-prefix 0.0.0.0/0 kthw-secgroup
+neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 6443 --port-range-max 6443 --remote-ip-prefix 0.0.0.0/0 kthw-secgroup
+neutron security-group-rule-create --description allow-external --direction ingress --protocol icmp --remote-ip-prefix 0.0.0.0/0 kthw-secgroup
 ```
 
 ### Validate rules
 
 ```
-neutron security-group-show f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
+neutron security-group-show kthw-secgroup
 ```
 
 ```
@@ -125,7 +123,7 @@ neutron security-group-show f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f
 +----------------------+--------------------------------------------------------------------+
 | description          |                                                                    |
 | id                   | f5c7a0f1-95c5-4cf6-b79c-c3eec080cb5f                               |
-| name                 | kubernetes-the-hard-way                                            |
+| name                 | kthw-secgroup                                                      |
 | security_group_rules | {                                                                  |
 |                      |      "remote_group_id": null,                                      |
 |                      |      "direction": "ingress",                                       |
@@ -163,13 +161,13 @@ All the VMs in this lab will be provisioned using Container Linux.
 ### Fixed IPs
 
 ```
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.10 --name master0 --dns_name master0 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.11 --name master1 --dns_name master1 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.12 --name master2 --dns_name master2 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.20 --name minion0 --dns_name minino0 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.21 --name minion1 --dns_name minino1 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.22 --name minion2 --dns_name minino2 $NETWORK
-neutron port-create --fixed-ip subnet_id=$SUBNET,ip_address=10.180.0.30 --name gateway --dns_name gateway $NETWORK
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.100 --name master0 --dns-name master0 kthw-net
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.101 --name master1 --dns-name master1 kthw-net
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.102 --name master2 --dns-name master2 kthw-net
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.200 --name minion0 --dns-name minion0 kthw-net
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.201 --name minion1 --dns-name minion1 kthw-net
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.202 --name minion2 --dns-name minion2 kthw-net
+neutron port-create --fixed-ip subnet_id=kthw-subnet,ip_address=10.180.0.99  --name gateway --dns-name gateway kthw-net
 ```
 
 ```
@@ -177,18 +175,25 @@ neutron port-list
 ```
 
 ```
-+--------------------------------------+----------+-------------------+------------------------------------------------------------------------------------+
-| id                                   | name     | mac_address       | fixed_ips                                                                          |
-+--------------------------------------+----------+-------------------+------------------------------------------------------------------------------------+
-| 67dc2530-841b-483c-9852-8311341f018c | master0  | fa:16:3e:9e:62:cf | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.10"} |
-| 99bdf85e-d8d1-4eb5-b543-eb7f7b15299b | master1  | fa:16:3e:7b:01:34 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.11"} |
-| 83206176-8509-4d0d-8151-77b89b5135b7 | master2  | fa:16:3e:5c:05:19 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.12"} |
-| 3235e943-8e40-4b31-bbc3-ea11124a6cd1 | minion0  | fa:16:3e:ff:1b:f4 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.20"} |
-| e4d21b0a-2e5e-4f0a-a3ee-5bc3243348ae | minion1  | fa:16:3e:a1:22:27 | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.21"} |
-| 9808735a-f0d2-4d05-9414-d541684e12a7 | minion2  | fa:16:3e:7a:c0:3f | {"subnet_id": "ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed", "ip_address": "10.180.0.22"} |
-| 848396d3-5e18-4410-9a7f-949295428e3f | gateway  | fa:16:3e:4f:ea:7e | {"subnet_id": "83aab941-87f4-4372-9fbc-9f702092e3cf", "ip_address": "10.180.0.30"} |
-+--------------------------------------+----------+-------------------+------------------------------------------------------------------------------------+
++--------------------------------------+---------+-------------------+-------------------------------------------------------------------------------------+
+| id                                   | name    | mac_address       | fixed_ips                                                                           |
++--------------------------------------+---------+-------------------+-------------------------------------------------------------------------------------+
+| 1c4df28e-69ee-43bd-9f4d-202406a3fcd1 |         | fa:16:3e:5f:0b:c8 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.5"}   |
+| 30398f39-2a0c-450a-a11a-f387190c1ca7 | master2 | fa:16:3e:6a:15:4b | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.102"} |
+| 374eb1bd-c612-4e36-a2c9-8476f7fae12a | master0 | fa:16:3e:fd:b5:58 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.100"} |
+| 773cb1aa-d2d9-4f5c-87bd-6d799892a53e |         | fa:16:3e:d8:18:d3 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.2"}   |
+| 848e0e6b-67f9-4a88-b956-e68806ce5dd6 | master1 | fa:16:3e:c5:a9:22 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.101"} |
+| 877abc10-1b3e-4224-96c0-d34067c6e2a1 | minion1 | fa:16:3e:2f:0f:36 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.201"} |
+| 904dc7cd-c4ba-4857-b6e5-9971532262f9 |         | fa:16:3e:e3:24:3b | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.4"}   |
+| a92c2bfe-d757-43f4-9550-6514c8f41189 | minion2 | fa:16:3e:2f:0f:13 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.202"} |
+| b013b962-8cd0-4fe8-ba49-bbe06276b7b1 |         | fa:16:3e:55:5a:5f | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.1"}   |
+| c8fead6f-7d4e-4607-b113-2e07460d0a7b | minion0 | fa:16:3e:e6:62:2c | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.200"} |
+| d9537e69-7e29-4fdc-bd4b-9e56b8b90765 | gateway | fa:16:3e:12:39:83 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.99"}  |
+| df42584a-e323-4cd4-aa3e-d7a93481fd9d |         | fa:16:3e:9f:d6:e3 | {"subnet_id": "b279046b-baaa-490b-a8be-f23a917c6766", "ip_address": "10.180.0.3"}   |
++--------------------------------------+---------+-------------------+-------------------------------------------------------------------------------------+
 ```
+
+Note: You will see a few extra infrastructure ports. 
 
 ### Virtual Machines
 
@@ -198,27 +203,42 @@ nova keypair-add --pub-key id_rsa.pub id_rsa
 ```
 #### Kubernetes Masters 
 
+This requires to look up the port-id in the `port-list`. Names don't work here.
+Be careful not to confuse names/ports.
+
 ```
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kubernetes-the-hard-way --nic port-id=67dc2530-841b-483c-9852-8311341f018c master0
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kubernetes-the-hard-way --nic port-id=99bdf85e-d8d1-4eb5-b543-eb7f7b15299b master1
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kubernetes-the-hard-way --nic port-id=83206176-8509-4d0d-8151-77b89b5135b7 master2
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --nic port-id=374eb1bd-c612-4e36-a2c9-8476f7fae12a master0
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --nic port-id=848e0e6b-67f9-4a88-b956-e68806ce5dd6 master1
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --nic port-id=30398f39-2a0c-450a-a11a-f387190c1ca7 master2
 ```
 
 #### Kubernetes Minions 
 
 ```
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kubernetes-the-hard-way --nic port-id=3235e943-8e40-4b31-bbc3-ea11124a6cd1 minion0 
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kubernetes-the-hard-way --nic port-id=e4d21b0a-2e5e-4f0a-a3ee-5bc3243348ae minion1
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kubernetes-the-hard-way --nic port-id=9808735a-f0d2-4d05-9414-d541684e12a7 minion2
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --nic port-id=c8fead6f-7d4e-4607-b113-2e07460d0a7b minion0 
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --nic port-id=877abc10-1b3e-4224-96c0-d34067c6e2a1 minion1
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --nic port-id=a92c2bfe-d757-43f4-9550-6514c8f41189 minion2
 ```
 
 #### Gateway
 
 ```
-nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups kubernetes-the-hard-way --nic port-id=848396d3-5e18-4410-9a7f-949295428e3f gateway
+nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --security-groups default,kthw-secgroup --nic port-id=d9537e69-7e29-4fdc-bd4b-9e56b8b90765 gateway
 ```
 
 We can now associate a floatingip with the gateway to access the kubenet
 ```
-neutron floatingip-create --fixed-ip-address 10.180.0.30 --port-id=848396d3-5e18-4410-9a7f-949295428e3f $EXTERNAL_NETWORK
+neutron floatingip-create --fixed-ip-address 10.180.0.99 --port-id=d9537e69-7e29-4fdc-bd4b-9e56b8b90765 FloatingIP-external-monsoon3
+```
+
+#### Add instances to the Security Group
+
+```
+nova add-secgroup master0 kthw-secgroup
+nova add-secgroup master1 kthw-secgroup
+nova add-secgroup master2 kthw-secgroup
+nova add-secgroup minion0 kthw-secgroup
+nova add-secgroup minion1 kthw-secgroup
+nova add-secgroup minion2 kthw-secgroup
+nova add-secgroup gateway kthw-secgroup
 ```
