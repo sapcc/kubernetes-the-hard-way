@@ -229,6 +229,7 @@ nova boot --flavor m1.small --key-name id_rsa --image coreos-stable-amd64 --secu
 We can now associate a floatingip with the gateway to access the kubenet
 ```
 neutron floatingip-create --fixed-ip-address 10.180.0.99 --port-id=d9537e69-7e29-4fdc-bd4b-9e56b8b90765 FloatingIP-external-monsoon3
+export GATEWAY=10.47.0.43
 ```
 
 #### Add instances to the Security Group
