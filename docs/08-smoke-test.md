@@ -12,43 +12,75 @@ kubectl run nginx --image=nginx --port=80 --replicas=3
 kubectl get pods -o wide
 ```
 ```
-NAME                    READY     STATUS    RESTARTS   AGE       IP           NODE
-nginx-158599303-7k8p9   1/1       Running   0          13s       10.200.2.3   worker2
-nginx-158599303-h0zcs   1/1       Running   0          13s       10.200.1.2   worker1
-nginx-158599303-rfhm3   1/1       Running   0          13s       10.200.0.2   worker0
+NAME                     READY     STATUS    RESTARTS   AGE       IP             NODE
+nginx-2371676037-7f5v2   1/1       Running   0          12s       10.180.132.2   minion0
+nginx-2371676037-d6bhh   1/1       Running   0          12s       10.180.131.2   minion1
+nginx-2371676037-x7ddv   1/1       Running   0          2h        10.180.133.2   minion2
+```
+
+
+From any master or minion the pod will respond:
+```
+curl http://10.180.133.2
+```
+
+## Externally Expose a Service 
+
+Let's expose the service:
+
+```
+kubectl expose deployment nginx --type LoadBalancer --port=80 
+```
+
+This will automatically create a load-balancer using the Openstack
+cloud-provider.
+
+From any minion the services ClusterIP will respond:
+```
+kubectl get service nginx
+NAME      CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+nginx     10.180.1.66   10.180.0.25   80:31617/TCP   44m
+
+curl http://10.180.1.66
+```
+
+### Attach a Floating IP
+
+Let's find the new load-balancer:
+
+```
+neutron lbaas-loadbalancer-list
 ```
 
 ```
-kubectl expose deployment nginx --type NodePort
++--------------------------------------+----------------------------------+-------------+---------------------+------------+
+| id                                   | name                             | vip_address | provisioning_status | provider   |
++--------------------------------------+----------------------------------+-------------+---------------------+------------+
+| abb068fc-d6ed-4a81-b424-b95a5f775bcc | master                           | 10.180.0.7  | ACTIVE              | f5networks |
+| 1efca370-6487-4448-a4b5-e94b20c6a85a | ab7fe37cb3ba111e7a45afa163e30cd4 | 10.180.0.25 | ACTIVE              | f5networks |
++--------------------------------------+----------------------------------+-------------+---------------------+------------+
 ```
 
-> Note that --type=LoadBalancer will not work because we did not configure a cloud provider when bootstrapping this cluster.
-
-Grab the `NodePort` that was setup for the nginx service:
-
+We need to grep its port:
 ```
-NODE_PORT=$(kubectl get svc nginx --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
+neutron port-list | grep abb068fc-d6ed-4a81-b424-b95a5f775bcc
 ```
 
-### Create the Node Port Firewall Rule
-
 ```
-gcloud compute firewall-rules create kubernetes-nginx-service \
-  --allow=tcp:${NODE_PORT} \
-  --network kubernetes-the-hard-way
+| 08899903-ca6c-42a0-b210-f8a380dfcd80 | loadbalancer-abb068fc-d6ed-4a81-b424-b95a5f775bcc                                      | fa:16:3e:8b:54:99 | {"subnet_id": "83aab941-87f4-4372-9fbc-9f702092e3cf", "ip_address": "10.180.0.7"}  |
 ```
 
-Grab the `EXTERNAL_IP` for one of the worker nodes:
+And assign a floating IP:
 
 ```
-NODE_PUBLIC_IP=$(gcloud compute instances describe worker0 \
-  --format 'value(networkInterfaces[0].accessConfigs[0].natIP)')
-```
+neutron floatingip-create $EXTERNAL_NETWORK
+neutron floatingip-associate b701ae4f-161a-41ef-bf84-e70a2bf68581 08899903-ca6c-42a0-b210-f8a380dfcd80
+````
 
-Test the nginx service using cURL:
+### Verify
 
 ```
-curl http://${NODE_PUBLIC_IP}:${NODE_PORT}
+curl http://${FLOATING_IP}
 ```
 
 ```
