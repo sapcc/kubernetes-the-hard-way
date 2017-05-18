@@ -6,7 +6,7 @@ The following should be done on the gateway else the file has to be transported 
 
 ## Download and Install kubectl
 
-The kubectl client will be used to generate kubeconfig files which will be consumed by the kubelet and kube-proxy services.
+The kubectl client will be used to generate kubeconfig files which will be consumed by the kubelet and kube-proxy services. 
 
 ### OS X
 
@@ -22,15 +22,6 @@ sudo mv kubectl /usr/local/bin
 wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
-```
-
-### Gateway
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/linux/amd64/kubectl
-chmod +x kubectl
-sudo mkdir -p /opt/bin
-sudo mv kubectl /opt/bin
 ```
 
 ## Authentication
@@ -75,26 +66,20 @@ Each kubeconfig requires a Kubernetes master to connect to. To support H/A the I
 kubectl config set-cluster kubernetes-the-hard-way \
   --certificate-authority=ca.pem \
   --embed-certs=true \
-  --server=https://localhost:6443
+  --server=https://localhost:6443 \
   --kubeconfig=master.kubeconfig
-```
 
-```
 kubectl config set-credentials kubelet \
   --client-certificate=kubelet.pem \
   --client-key=kubelet-key.pem \
   --embed-certs=true \
   --kubeconfig=master.kubeconfig
-```
 
-```
 kubectl config set-context default \
   --cluster=kubernetes-the-hard-way \
   --user=kubelet \
   --kubeconfig=master.kubeconfig
-```
 
-```
 kubectl config use-context default --kubeconfig=master.kubeconfig
 ```
 
@@ -106,22 +91,16 @@ kubectl config set-cluster kubernetes-the-hard-way \
   --embed-certs=true \
   --server=https://${KUBERNETES_PUBLIC_ADDRESS} \
   --kubeconfig=bootstrap.kubeconfig
-```
 
-```
 kubectl config set-credentials kubelet-bootstrap \
   --token=${BOOTSTRAP_TOKEN} \
   --kubeconfig=bootstrap.kubeconfig
-```
 
-```
 kubectl config set-context default \
   --cluster=kubernetes-the-hard-way \
   --user=kubelet-bootstrap \
   --kubeconfig=bootstrap.kubeconfig
-```
 
-```
 kubectl config use-context default --kubeconfig=bootstrap.kubeconfig
 ```
 
@@ -134,28 +113,30 @@ kubectl config set-cluster kubernetes-the-hard-way \
   --embed-certs=true \
   --server=https://${KUBERNETES_PUBLIC_ADDRESS} \
   --kubeconfig=kube-proxy.kubeconfig
-```
 
-```
 kubectl config set-credentials kube-proxy \
   --client-certificate=kube-proxy.pem \
   --client-key=kube-proxy-key.pem \
   --embed-certs=true \
   --kubeconfig=kube-proxy.kubeconfig
-```
 
-```
 kubectl config set-context default \
   --cluster=kubernetes-the-hard-way \
   --user=kube-proxy \
   --kubeconfig=kube-proxy.kubeconfig
-```
 
-```
 kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 ```
 
 ## Cloud Provider Config
+
+```
+neutron router-show kthw-router 
+export ROUTER_ID=72b5cd25-b955-4963-a5ef-990852d7752a
+
+neutron subnet-show kthw-subnet
+export SUBNET_ID=b279046b-baaa-490b-a8be-f23a917c6766
+```
 
 ```
 cat > openstack.config <<EOF
@@ -168,7 +149,7 @@ tenant-name = ${OS_PROJECT_NAME}
 region = ${OS_REGION_NAME} 
 [LoadBalancer]
 lb-version=v2
-subnet-id= ${SUBNET}
+subnet-id = ${SUBNET_ID}
 create-monitor = yes
 monitor-delay = 1m
 monitor-timeout = 30s
@@ -183,12 +164,10 @@ EOF
 ## Distribute the client configuration 
 
 ```
-scp *config token.csv core@$GATEWAY:~/
-ssh -A core@$GATEWAY
-scp master.kubeconfig openstack.config token.csv core@10.180.0.10:~/
-scp master.kubeconfig openstack.config token.csv core@10.180.0.11:~/
-scp master.kubeconfig openstack.config token.csv core@10.180.0.12:~/
-scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.20:~/
-scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.21:~/
-scp bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.22:~/
+scp -oProxyJump=core@$GATEWAY:22 master.kubeconfig openstack.config token.csv core@10.180.0.100:~/
+scp -oProxyJump=core@$GATEWAY:22 master.kubeconfig openstack.config token.csv core@10.180.0.101:~/
+scp -oProxyJump=core@$GATEWAY:22 master.kubeconfig openstack.config token.csv core@10.180.0.102:~/
+scp -oProxyJump=core@$GATEWAY:22 bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.200:~/
+scp -oProxyJump=core@$GATEWAY:22 bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.201:~/
+scp -oProxyJump=core@$GATEWAY:22 bootstrap.kubeconfig kube-proxy.kubeconfig openstack.config core@10.180.0.202:~/
 ```
