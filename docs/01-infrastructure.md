@@ -58,7 +58,7 @@ export NETWORK=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 Create a subnet for the Kubernetes cluster:
 
 ```
-neutron subnet-create --name khw-subnet $NETWORK 10.180.0.0/16
+neutron subnet-create --name khw-subnet $NETWORK 10.180.0.0/24
 export SUBNET=ce4fde76-1db9-4dbf-a1ba-1ae261bbcfed
 ```
 
@@ -111,11 +111,6 @@ Allow external traffic:
 neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 22 --port-range-max 22 --remote-ip-prefix 0.0.0.0/0 $SECGROUP
 neutron security-group-rule-create --description allow-external --direction ingress --protocol tcp --port-range-min 6443 --port-range-max 6443 --remote-ip-prefix 0.0.0.0/0 $SECGROUP
 neutron security-group-rule-create --description allow-external --direction ingress --protocol icmp --remote-ip-prefix 0.0.0.0/0 $SECGROUP
-```
-
-Allow the loadbalancer health-check:
-```
-TODO
 ```
 
 ### Validate rules
