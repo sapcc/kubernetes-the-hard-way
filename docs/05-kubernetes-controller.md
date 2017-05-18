@@ -50,6 +50,8 @@ cat > kubelet.service <<EOF
 Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
 Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
   --mount volume=resolv,target=/etc/resolv.conf \
+  --volume=var-log,kind=host,source=/var/log \
+  --mount volume=var-log,target=/var/log \
   --uuid-file-save=/var/run/kubelet-pod.uuid"
 ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
@@ -230,6 +232,7 @@ spec:
         - --audit-log-maxbackup=3 
         - --audit-log-maxsize=100 
         - --audit-log-path=/var/lib/audit.log 
+        - --authorization-mode=RBAC
         - --bind-address=0.0.0.0
         - --client-ca-file=/etc/kubernetes/ca.pem
         - --enable-swagger-ui=true
@@ -299,6 +302,8 @@ spec:
         - --master=http://${INTERNAL_IP}:8080 
         - --root-ca-file=/var/lib/kubernetes/ca.pem 
         - --service-cluster-ip-range=10.180.1.0/24
+        - --root-ca-file=/etc/kubernetes/ca.pem
+        - --service-account-private-key-file=/etc/kubernetes/ca-key.pem
         - --cloud-config=/etc/kubernetes/openstack.config 
         - --cloud-provider=openstack 
       livenessProbe:
