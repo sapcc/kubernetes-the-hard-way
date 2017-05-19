@@ -271,6 +271,9 @@ cat > kubernetes-csr.json <<EOF
     "127.0.0.1",
     "localhost",
     "kubernetes.default",
+    "master0",
+    "master1",
+    "master2",
     "minion0",
     "minion1",
     "minion2"
