@@ -57,6 +57,11 @@ ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --cloud-config=/etc/kubernetes/openstack.config \
   --cloud-provider=openstack \
+  --cluster-dns=10.180.1.254 \
+  --cluster-domain=cluster.local \
+  --hostname-override=$(hostname -s) \
+  --tls-cert-file=/etc/kubernetes/kubernetes.pem \
+  --tls-private-key-file=/etc/kubernetes/kubernetes-key.pem \
   --network-plugin=kubenet \
   --require-kubeconfig \
   --pod-manifest-path=/etc/kubernetes/manifests \
@@ -101,7 +106,7 @@ sudo mkdir -p /var/lib/etcd
 Each etcd member must have a unique name within an etcd cluster. Set the etcd name:
 
 ```
-ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 11)
+ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 12)
 ```
 
 Create the manifest file:
@@ -131,7 +136,7 @@ spec:
         - name: ETCD_DATA_DIR
           value: /var/lib/etcd
         - name: ETCD_INITIAL_CLUSTER
-          value: master0=https://10.180.0.10:2380,master1=https://10.180.0.11:2380,master2=https://10.180.0.12:2380
+          value: master0=https://10.180.0.100:2380,master1=https://10.180.0.101:2380,master2=https://10.180.0.102:2380
         - name: ETCD_INITIAL_CLUSTER_TOKEN
           value: kubernetes-the-hard-way
         - name: ETCD_INITIAL_ADVERTISE_PEER_URLS
@@ -182,9 +187,9 @@ Once all 3 etcd nodes have been bootstrapped verify the etcd cluster is healthy:
 
 ```
 sudo etcdctl \
-  --ca-file=/etc/etcd/ca.pem \
-  --cert-file=/etc/etcd/kubernetes.pem \
-  --key-file=/etc/etcd/kubernetes-key.pem \
+  --ca-file=/etc/kubernetes/ca.pem \
+  --cert-file=/etc/kubernetes/kubernetes.pem \
+  --key-file=/etc/kubernetes/kubernetes-key.pem \
   cluster-health
 ```
 
@@ -196,12 +201,6 @@ cluster is healthy
 ```
 
 ### Kubernetes API Server
-
-Capture the internal IP address of the machine:
-
-```
-INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-```
 
 Create the manifest file:
 
@@ -239,7 +238,7 @@ spec:
         - --etcd-cafile=/etc/kubernetes/ca.pem 
         - --etcd-certfile=/etc/kubernetes/kubernetes.pem
         - --etcd-keyfile=//etc/kubernetes/kubernetes-key.pem 
-        - --etcd-servers=https://10.180.0.10:2379,https://10.180.0.11:2379,https://10.180.0.12:2379
+        - --etcd-servers=https://10.180.0.100:2379,https://10.180.0.101:2379,https://10.180.0.102:2379
         - --event-ttl=1h 
         - --experimental-bootstrap-token-auth 
         - --insecure-bind-address=0.0.0.0
@@ -372,15 +371,15 @@ The `kubelets` will register themselves automatically and setup a static route
 for their pods. The router should look similar to:
 
 ```
-neutron router-show $ROUTER_ID
+neutron router-show kthw-router 
 +-------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Field                                           | Value                                                                                                                                                  |
 +-------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
 | id                                              | 29635b60-d79f-4536-8144-b2271031461d                                                                                                                   |
 | name                                            | kthw-router                                                                                                                                            |
-| routes                                          | {"destination": "10.180.131.0/24", "nexthop": "10.180.0.10"}                                                                                           |
-|                                                 | {"destination": "10.180.128.0/24", "nexthop": "10.180.0.11"}                                                                                           |
-|                                                 | {"destination": "10.180.129.0/24", "nexthop": "10.180.0.12"}                                                                                           |
+| routes                                          | {"destination": "10.180.131.0/24", "nexthop": "10.180.0.100"}                                                                                           |
+|                                                 | {"destination": "10.180.128.0/24", "nexthop": "10.180.0.101"}                                                                                           |
+|                                                 | {"destination": "10.180.129.0/24", "nexthop": "10.180.0.102"}                                                                                           |
 ...
 +-------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
@@ -392,25 +391,25 @@ neutron router-show $ROUTER_ID
 
 Create a load balancer:
 ```
-neutron lbaas-loadbalancer-create --name masters-lb $NETWORK
+neutron lbaas-loadbalancer-create --name kthw-apiservers-lb kthw-subnet 
 ```
 
 Create and fill the pool with out master nodes:
 ```
-neutron lbaas-pool-create --lb-algorithm ROUND_ROBIN --protocol TCP --name masters-pool --loadbalancer masters-lb
-neutron lbaas-member-create --subnet $SUBNET --protocol-port 6443 --address 10.180.0.10 masters-pool
-neutron lbaas-member-create --subnet $SUBNET --protocol-port 6443 --address 10.180.0.11 masters-pool
-neutron lbaas-member-create --subnet $SUBNET --protocol-port 6443 --address 10.180.0.12 masters-pool
+neutron lbaas-pool-create --lb-algorithm ROUND_ROBIN --protocol TCP --name kthw-apiservers-pool --loadbalancer kthw-apiservers-lb 
+neutron lbaas-member-create --subnet kthw-subnet --protocol-port 6443 --address 10.180.0.100 kthw-apiservers-pool
+neutron lbaas-member-create --subnet kthw-subnet --protocol-port 6443 --address 10.180.0.101 kthw-apiservers-pool
+neutron lbaas-member-create --subnet kthw-subnet --protocol-port 6443 --address 10.180.0.102 kthw-apiservers-pool
 ```
 
 Create a health check:
 ```
-neutron lbaas-healthmonitor-create --name masters-health --delay 5 --max-retries 2 --timeout 3 --type TCP --pool masters-pool 
+neutron lbaas-healthmonitor-create --name kthw-apiservers-health --delay 5 --max-retries 2 --timeout 3 --type TCP --pool kthw-apiservers-pool
 ```
 
 Create a listener:
 ```
-neutron lbaas-listener-create --protocol TCP --protocol-port 443 --loadbalancer master --default-pool masters-pool --name masters-listener
+neutron lbaas-listener-create --protocol TCP --protocol-port 443 --loadbalancer kthw-apiservers-lb --default-pool kthw-apiservers-pool --name kthw-apiservers-listener
 ```
 
 Attach our previously reserved floating-ip:
@@ -498,5 +497,6 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: kubernetes.io/cinder
-./kubectl create -f -
+EOF
+kubectl create -f -
 ```
