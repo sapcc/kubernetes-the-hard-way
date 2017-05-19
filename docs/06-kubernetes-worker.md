@@ -56,13 +56,18 @@ ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --cloud-config=/etc/kubernetes/openstack.config \
   --cloud-provider=openstack \
+  --cluster-dns=10.180.1.254 \
+  --cluster-domain=cluster.local \
+  --hostname-override=$(hostname -s) \
+  --tls-cert-file=/etc/kubernetes/kubernetes.pem \
+  --tls-private-key-file=/etc/kubernetes/kubernetes-key.pem \
   --allow-privileged=true \
   --network-plugin=kubenet \
   --require-kubeconfig \
   --pod-manifest-path=/etc/kubernetes/manifests \
   --kubeconfig=/etc/kubernetes/minion.kubeconfig \
   --experimental-bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
-  --cert-dir=/etc/kubernetes
+  --cert-dir=/etc/kubernetes 
 ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
 Restart=always
 RestartSec=10
