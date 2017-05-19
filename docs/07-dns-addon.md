@@ -16,7 +16,7 @@ kubectl create clusterrolebinding serviceaccounts-cluster-admin \
 Create the `kubedns` service:
 
 ```
-kubectl create -f https://raw.githubusercontent.com/kelseyhightower/kubernetes-the-hard-way/master/services/kubedns.yaml
+kubectl create -f https://raw.githubusercontent.com/sapcc/kubernetes-the-hard-way/master/services/kubedns.yaml
 ```
 
 ```
@@ -25,13 +25,13 @@ kubectl --namespace=kube-system get svc
 
 ```
 NAME       CLUSTER-IP   EXTERNAL-IP   PORT(S)         AGE
-kube-dns   10.32.0.10   <none>        53/UDP,53/TCP   5s
+kube-dns   10.180.1.254   <none>        53/UDP,53/TCP   5s
 ```
 
 Create the `kubedns` deployment:
 
 ```
-kubectl create -f https://raw.githubusercontent.com/kelseyhightower/kubernetes-the-hard-way/master/deployments/kubedns.yaml
+kubectl create -f https://raw.githubusercontent.com/sapcc/kubernetes-the-hard-way/master/deployments/kubedns.yaml
 ```
 
 ```
