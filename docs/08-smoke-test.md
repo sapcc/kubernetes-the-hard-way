@@ -141,7 +141,7 @@ NAME                                       CAPACITY   ACCESSMODES   RECLAIMPOLIC
 pvc-1e8d5024-3baf-11e7-914e-fa163e7d628d   8Gi        RWO           Delete          Bound     default/www   standard                 4m
 ```
 
-
+```
 cat <<EOF |
 apiVersion: v1
 kind: Pod 
@@ -160,3 +160,4 @@ spec:
         claimName:  www 
 EOF
 kubectl create -f -
+```
