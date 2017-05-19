@@ -73,7 +73,7 @@ neutron port-list | grep abb068fc-d6ed-4a81-b424-b95a5f775bcc
 And assign a floating IP:
 
 ```
-neutron floatingip-create $EXTERNAL_NETWORK
+neutron floatingip-create FloatingIP-external-monsoon3
 neutron floatingip-associate b701ae4f-161a-41ef-bf84-e70a2bf68581 08899903-ca6c-42a0-b210-f8a380dfcd80
 ````
 
@@ -128,7 +128,7 @@ spec:
     requests:
       storage: 8Gi
 EOF
-./kubectl create -f -
+kubectl create -f -
 ```
 
 This will auto-provision a cinder volume:
@@ -157,6 +157,6 @@ spec:
   volumes:
     - name: mypvc
       persistentVolumeClaim:
-        claimName: myclaim 
+        claimName:  www 
 EOF
-./kubectl create -f -
+kubectl create -f -
