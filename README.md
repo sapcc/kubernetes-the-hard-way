@@ -13,6 +13,7 @@ The target audience for this tutorial is someone planning to support a productio
 ## Cluster Details
 
 * Kubernetes 1.6.3
+* Container Linux, Self-Aware Kubernetes using Static Pods
 * Openstack Cloud Provider Integration
 * Docker 1.12.6
 * etcd 3.1.4
