@@ -51,6 +51,10 @@ Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
   --mount volume=resolv,target=/etc/resolv.conf \
   --volume=var-log,kind=host,source=/var/log \
   --mount volume=var-log,target=/var/log \
+  --volume var-lib-cni,kind=host,source=/var/lib/cni \
+  --mount volume=var-lib-cni,target=/var/lib/cni \
+  --volume=lib-modules,kind=host,source=/lib/modules,readOnly=true \
+  --mount volume=lib-modules,target=/lib/modules \
   --uuid-file-save=/var/run/kubelet-pod.uuid"
 ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
