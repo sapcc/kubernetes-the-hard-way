@@ -71,6 +71,7 @@ ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --pod-manifest-path=/etc/kubernetes/manifests \
   --kubeconfig=/etc/kubernetes/minion.kubeconfig \
   --experimental-bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
+  --non-masquerade-cidr=10.180.0.0/16 \
   --cert-dir=/etc/kubernetes 
 ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
 Restart=always
