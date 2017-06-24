@@ -81,7 +81,7 @@ Create a public IP address that will be used by remote clients to connect to the
 
 ```
 neutron floatingip-create FloatingIP-external-monsoon3
-export KUBERNETES_PUBLIC_ADDRESS=10.47.40.96
+export KUBERNETES_PUBLIC_ADDRESS=10.47.40.33
 ```
 
 ### Create Firewall Rules
