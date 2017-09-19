@@ -54,6 +54,13 @@ chmod +x cfssljson_linux-amd64
 sudo mv cfssljson_linux-amd64 /usr/local/bin/cfssljson
 ```
 
+**Note:** On CoreOS the above directory is read only, therefore you might want to use a different path.
+```
+sudo mkdir -p /opt/bin/
+sudo mv cfssljson_linux-amd64 cfssl_darwin-amd64 /opt/bin/
+export PATH=$PATH:/opt/bin
+```
+
 ## Set up a Certificate Authority
 
 Create a CA configuration file:

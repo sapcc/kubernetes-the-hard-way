@@ -24,6 +24,13 @@ chmod +x kubectl
 sudo mv kubectl /usr/local/bin
 ```
 
+**Note:** On CoreOS the above directory is read only, therefore you might want to use a different path.
+```
+sudo mkdir -p /opt/bin/
+sudo mv kubectl /opt/bin/
+export PATH=$PATH:/opt/bin
+```
+
 ## Authentication
 
 The following components will leverge Kubernetes RBAC:
@@ -41,7 +48,7 @@ This section will walk you through the creation of a TLS bootstrap token that wi
 Generate a token:
 
 ```
-BOOTSTRAP_TOKEN=$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')
+export BOOTSTRAP_TOKEN=$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')
 ```
 
 Generate a token file:

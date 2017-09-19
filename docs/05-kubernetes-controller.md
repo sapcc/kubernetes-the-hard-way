@@ -32,7 +32,7 @@ supervisor.
 Run the following commands on `master0`, `master1`, `master2`:
 
 ```
-INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+export INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 ```
 
 ### Prepare Config
@@ -110,7 +110,7 @@ sudo mkdir -p /var/lib/etcd
 Each etcd member must have a unique name within an etcd cluster. Set the etcd name:
 
 ```
-ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 12)
+export ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 12)
 ```
 
 Create the manifest file:
