@@ -29,15 +29,15 @@ This lab requires the `cfssl` and `cfssljson` binaries. Download them from the [
 ### OS X
 
 ```
-wget https://pkg.cfssl.org/R1.2/cfssl_darwin-amd64
-chmod +x cfssl_darwin-amd64
-sudo mv cfssl_darwin-amd64 /usr/local/bin/cfssl
+wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+chmod +x cfssl_linux-amd64
+sudo mv cfssl_linux-amd64 /usr/local/bin/cfssl
 ```
 
 ```
-wget https://pkg.cfssl.org/R1.2/cfssljson_darwin-amd64
-chmod +x cfssljson_darwin-amd64
-sudo mv cfssljson_darwin-amd64 /usr/local/bin/cfssljson
+wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+chmod +x cfssljson_linux-amd64
+sudo mv cfssljson_linux-amd64 /usr/local/bin/cfssljson
 ```
 
 ### Linux
@@ -52,6 +52,13 @@ sudo mv cfssl_linux-amd64 /usr/local/bin/cfssl
 wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
 chmod +x cfssljson_linux-amd64
 sudo mv cfssljson_linux-amd64 /usr/local/bin/cfssljson
+```
+
+**Note:** On CoreOS the above directory is read only, therefore you might want to use a different path.
+```
+sudo mkdir -p /opt/bin/
+sudo mv cfssljson_linux-amd64 cfssl_linux-amd64 /opt/bin/
+export PATH=$PATH:/opt/bin
 ```
 
 ## Set up a Certificate Authority
@@ -261,6 +268,7 @@ cat > kubernetes-csr.json <<EOF
 {
   "CN": "kubernetes",
   "hosts": [
+    "10.180.1.1",
     "10.180.0.100",
     "10.180.0.101",
     "10.180.0.102",

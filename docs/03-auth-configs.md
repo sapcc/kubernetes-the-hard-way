@@ -11,7 +11,7 @@ The kubectl client will be used to generate kubeconfig files which will be consu
 ### OS X
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/darwin/amd64/kubectl
+wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
 ```
@@ -22,6 +22,13 @@ sudo mv kubectl /usr/local/bin
 wget https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
+```
+
+**Note:** On CoreOS the above directory is read only, therefore you might want to use a different path.
+```
+sudo mkdir -p /opt/bin/
+sudo mv kubectl /opt/bin/
+export PATH=$PATH:/opt/bin
 ```
 
 ## Authentication
@@ -41,7 +48,7 @@ This section will walk you through the creation of a TLS bootstrap token that wi
 Generate a token:
 
 ```
-BOOTSTRAP_TOKEN=$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')
+export BOOTSTRAP_TOKEN=$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')
 ```
 
 Generate a token file:

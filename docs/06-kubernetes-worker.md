@@ -46,7 +46,7 @@ cat > kubelet.service <<EOF
 After=docker.service
 Requires=docker.service
 [Service]
-Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
+Environment=KUBELET_IMAGE_TAG=v1.7.6_coreos.0
 Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
   --mount volume=resolv,target=/etc/resolv.conf \
   --volume=var-log,kind=host,source=/var/log \
@@ -105,7 +105,7 @@ spec:
         path: /etc/kubernetes
   containers: 
     - name: proxy 
-      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      image: quay.io/coreos/hyperkube:v1.7.6_coreos.0
       args: 
         - /hyperkube
         - proxy 
@@ -166,10 +166,10 @@ kubectl get nodes
 
 ```
 NAME      STATUS    AGE       VERSION
-master0   Ready     2h        v1.6.3+coreos.0
-master1   Ready     2h        v1.6.3+coreos.0
-master2   Ready     2h        v1.6.3+coreos.0
-minion0   Ready     3m        v1.6.3+coreos.0
-minion1   Ready     2m        v1.6.3+coreos.0
-minion2   Ready     1m        v1.6.3+coreos.0
+master0   Ready     2h        v1.7.6+coreos.0
+master1   Ready     2h        v1.7.6+coreos.0
+master2   Ready     2h        v1.7.6+coreos.0
+minion0   Ready     3m        v1.7.6+coreos.0
+minion1   Ready     2m        v1.7.6+coreos.0
+minion2   Ready     1m        v1.7.6+coreos.0
 ```

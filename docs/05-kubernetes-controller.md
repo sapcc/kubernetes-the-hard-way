@@ -32,7 +32,7 @@ supervisor.
 Run the following commands on `master0`, `master1`, `master2`:
 
 ```
-INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+export INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 ```
 
 ### Prepare Config
@@ -47,7 +47,7 @@ sudo cp * /etc/kubernetes
 ```
 cat > kubelet.service <<EOF
 [Service]
-Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
+Environment=KUBELET_IMAGE_TAG=v1.7.6_coreos.0
 Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
   --mount volume=resolv,target=/etc/resolv.conf \
   --volume=var-log,kind=host,source=/var/log \
@@ -110,7 +110,7 @@ sudo mkdir -p /var/lib/etcd
 Each etcd member must have a unique name within an etcd cluster. Set the etcd name:
 
 ```
-ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 12)
+export ETCD_NAME=master$(echo $INTERNAL_IP | cut -c 12)
 ```
 
 Create the manifest file:
@@ -223,7 +223,7 @@ spec:
         path: /etc/kubernetes
   containers:
     - name: apiserver
-      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      image: quay.io/coreos/hyperkube:v1.7.6_coreos.0
       args:
         - /hyperkube
         - apiserver
@@ -291,7 +291,7 @@ spec:
         path: /etc/kubernetes
   containers:
     - name: controller-manager 
-      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      image: quay.io/coreos/hyperkube:v1.7.6_coreos.0
       args:
         - /hyperkube
         - controller-manager
@@ -335,7 +335,7 @@ spec:
   hostNetwork: true
   containers:
     - name: scheduler
-      image: quay.io/coreos/hyperkube:v1.6.3_coreos.0
+      image: quay.io/coreos/hyperkube:v1.7.6_coreos.0
       args:
         - /hyperkube
         - scheduler 
@@ -454,9 +454,9 @@ kubectl get nodes
 
 ```
 NAME      STATUS    AGE       VERSION
-master0   Ready     2h        v1.6.3+coreos.0
-master1   Ready     36m       v1.6.3+coreos.0
-master2   Ready     35m       v1.6.3+coreos.0
+master0   Ready     2h        v1.7.6+coreos.0
+master1   Ready     36m       v1.7.6+coreos.0
+master2   Ready     35m       v1.7.6+coreos.0
 ```
 
 You can also see the mirrored, static pods:

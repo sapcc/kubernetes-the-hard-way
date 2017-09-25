@@ -111,7 +111,7 @@ Commercial support is available at
 </html>
 ```
 
-## Creating a Persitent Volume
+## Creating a Persistent Volume
 
 Here we will create a volume claim:
 

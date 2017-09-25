@@ -7,7 +7,7 @@ Run the following commands from the machine which will be your Kubernetes Client
 ### OS X
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.3/bin/darwin/amd64/kubectl
+wget https://storage.googleapis.com/kubernetes-release/release/v1.7.6/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
 ```
@@ -15,9 +15,16 @@ sudo mv kubectl /usr/local/bin
 ### Linux
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.3/bin/linux/amd64/kubectl
+wget https://storage.googleapis.com/kubernetes-release/release/v1.7.6/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
+```
+
+**Note:** On CoreOS the above directory is read only, therefore you might want to use a different path.
+```
+sudo mkdir -p /opt/bin/
+sudo mv kubectl /opt/bin/
+export PATH=$PATH:/opt/bin
 ```
 
 ## Configure Kubectl
@@ -26,7 +33,7 @@ In this section you will configure the kubectl client to point to the [Kubernete
 
 Use the load balancer's floating ip from earlier:
 ```
-KUBERNETES_PUBLIC_ADDRESS=10.47.40.33
+export KUBERNETES_PUBLIC_ADDRESS=10.47.40.33
 ```
 
 Also be sure to locate the CA certificate [created earlier](02-certificate-authority.md). Since we are using self-signed TLS certs we need to trust the CA certificate so we can verify the remote API Servers.
