@@ -144,7 +144,7 @@ kubectl get csr
 
 ```
 NAME        AGE       REQUESTOR           CONDITION
-csr-XXXXX   1m        kubelet-bootstrap   Pending
+node-csr-XXXXX   1m        kubelet-bootstrap   Pending
 ```
 
 > Use the kubectl describe csr command to view the details of a specific signing request.
@@ -152,11 +152,11 @@ csr-XXXXX   1m        kubelet-bootstrap   Pending
 Approve each certificate signing request using the `kubectl certificate approve` command:
 
 ```
-kubectl certificate approve csr-XXXXX
+kubectl certificate approve node-csr-XXXXX
 ```
 
 ```
-certificatesigningrequest "csr-XXXXX" approved
+certificatesigningrequest "node-csr-XXXXX" approved
 ```
 
 Once all certificate signing requests have been approved all nodes should be registered with the cluster:
