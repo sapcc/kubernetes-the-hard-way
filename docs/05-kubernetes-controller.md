@@ -58,6 +58,7 @@ Environment="RKT_RUN_ARGS=--volume=resolv,kind=host,source=/etc/resolv.conf \
   --mount volume=lib-modules,target=/lib/modules \
   --uuid-file-save=/var/run/kubelet-pod.uuid"
 ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
+ExecStartPre=-/bin/mkdir -p /var/lib/cni
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
   --cloud-config=/etc/kubernetes/openstack.config \
   --cloud-provider=openstack \
