@@ -45,6 +45,19 @@ OS_REGION_NAME=eu-de-1
 docker run -ti --env-file lab_rc hub.global.cloud.sap/monsoon/cc-openstack-cli:latest -- bash
 ```
 
+## Setup OS Image
+
+Create the Container Linux image we are going to use to deploy our machines:
+```
+wget https://alpha.release.core-os.net/amd64-usr/current/coreos_production_openstack_image.img.bz2
+bunzip2 coreos_production_openstack_image.img.bz2
+
+glance image-create --name coreos-amd64-alpha \
+  --container-format bare \
+  --disk-format qcow2 \
+  --file coreos_production_openstack_image.img
+```
+
 ## Setup Networking
 
 We're going to be using the following network ranges:
