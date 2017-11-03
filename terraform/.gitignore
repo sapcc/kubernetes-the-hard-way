@@ -1,0 +1,8 @@
+*.csr
+*.pem
+admin-csr.json
+ca-csr.json
+ca-config.json
+.terraform
+terraform.tfstate*
+openrc
