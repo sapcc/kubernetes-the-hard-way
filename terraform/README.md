@@ -2,7 +2,7 @@
 
 **Caution:** This is work in progress. Currently it covers two parts of the entire guide  [infrastructure part](../docs/01-infrastructure.md) and [certificate-authority](..docs/02-certificate-authority.md).
 
-The original intention of the hardway guide is for you to understand the nuts and bolts of a kubernetes installation from scratch. Once you have installed via the hardway and understood the nitty-gritty details of it, you may want to automate the process. This guide helps you with automation.
+The original intention of the hardway guide is for you to understand the nuts and bolts of a kubernetes installation from scratch on OpenStack. Once you have installed via the hardway and understood the nitty-gritty details of it, you may wish to automate the process. This guide helps you with automation.
 
 ### Configuration
 
